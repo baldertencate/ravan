@@ -18,7 +18,7 @@ installable practice app lives separately at `/app/`.
 - Uses a short wrong-answer haptic and a longer level-unlock haptic on supported Android devices
 - Includes an About and Settings area for installation, reminders, sharing, vowel marks, haptics, privacy, and replaying onboarding
 - Works offline after the first visit
-- Uses privacy-conscious, aggregate Plausible events for product improvement; answer content,
+- Uses privacy-conscious, aggregate Umami events for product improvement; answer content,
   reminder times, learning progress, and personal identifiers are never sent
 
 ## Native preparation
@@ -49,10 +49,7 @@ practice app at `https://baldertencate.github.io/ravan/app/`.
 
 ## Analytics
 
-When Plausible is connected, production builds send a small set of explicit events such as practice
-starts, correct or incorrect answers, completed sets, installs, reminders, and level changes. Events
-contain only coarse context such as exercise type, level, and response-time range.
-
-Add `baldertencate.github.io` as a site in Plausible, copy its site-specific script URL, and save that
-URL as the GitHub Actions repository variable `PLAUSIBLE_SCRIPT_SRC`. Local builds do not load
-analytics unless `VITE_PLAUSIBLE_SCRIPT_SRC` is set.
+Production builds send Umami a small set of explicit events such as practice starts, correct or
+incorrect answers, completed sets, installs, reminders, and level changes. Events contain only coarse
+context such as exercise type, level, and response-time range. The tracker is restricted to
+`baldertencate.github.io`, so local development is not recorded.
