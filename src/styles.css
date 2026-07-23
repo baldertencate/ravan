@@ -982,7 +982,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .level-mastery small { line-height: 1.25; }
 .level-mastery.empty { opacity: .36; filter: grayscale(1); }
 .mini-ring {
-  background: conic-gradient(var(--orange) var(--value), #d4cbbd 0);
+  background: conic-gradient(var(--mastery-color, var(--orange)) var(--value), #d4cbbd 0);
   border-radius: 50%; position: relative; display: grid; place-items: center;
 }
 .mini-ring::after { content: ""; position: absolute; border-radius: 50%; background: #e7dfd1; inset: 7px; }
@@ -1067,6 +1067,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .mini-ring { --value: var(--score); width: 35px; height: 35px; font-size: 8px; font-weight: 700; }
 .mini-ring::after { inset: 4px; background: var(--paper); }
 .mini-ring span { position: relative; z-index: 1; }
+.mini-ring.complete { --mastery-color: var(--green); color: var(--green-dark); }
 .word-row > div:nth-child(2), .word-row > div:nth-child(3) { display: flex; flex-direction: column; }
 .word-row > div:nth-child(2) strong { font-family: "Noto Naskh Arabic", serif; font-size: 22px; line-height: 1.3; }
 .word-row span, .word-row small { color: var(--muted); font-size: 10px; }

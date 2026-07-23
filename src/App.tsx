@@ -1703,7 +1703,7 @@ export default function App() {
             <div className="page-intro compact">
               <span className="eyebrow">WORD GARDEN</span>
               <h1>{recentWords.length ? "Words you’ve met" : "Your first words await."}</h1>
-              <p>{dueCount} due now · {mastered} growing strong · stored only on this device</p>
+              <p>{dueCount} due now · {mastered} mastered · stored only on this device</p>
             </div>
             <div className="word-table">
               {recentWords.length === 0 ? (
@@ -1714,15 +1714,37 @@ export default function App() {
                 </button>
               ) : recentWords.map((word) => {
                 const stat = progress.words[word.id];
-                const score = Math.round((stat.correct / stat.seen) * 100);
+                const accuracy = Math.round((stat.correct / stat.seen) * 100);
+                const masterySteps =
+                  stat.lastAnswerCorrect === false
+                    ? 0
+                    : Number(stat.transliterationCorrect >= 1) +
+                      Number((stat.meaningCorrect ?? 0) >= 1);
+                const masteryScore = masterySteps * 50;
                 return (
                   <div className="word-row" key={word.id}>
-                    <div className="mini-ring" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}><span>{score}</span></div>
+                    <div
+                      className={`mini-ring ${masterySteps === 2 ? "complete" : ""}`}
+                      style={{ "--score": `${masteryScore * 3.6}deg` } as React.CSSProperties}
+                      aria-label={`${masterySteps} of 2 word mastery steps complete`}
+                    >
+                      <span>{masterySteps === 2 ? "✓" : `${masterySteps}/2`}</span>
+                    </div>
                     <div>
                       <strong lang="fa" dir="rtl">{displayWord(word)}</strong>
                       <span>{transliterationLabel(word)} · {word.meaning}</span>
                     </div>
-                    <div><span>{stat.seen} reviews</span><small>{stat.dueAt <= Date.now() ? "Due now" : `in ${Math.max(1, Math.ceil((stat.dueAt - Date.now()) / 86_400_000))}d`}</small></div>
+                    <div>
+                      <span>{stat.seen} reviews · {accuracy}% correct</span>
+                      <small>
+                        {stat.dueAt <= Date.now()
+                          ? "Due now"
+                          : `in ${Math.max(
+                              1,
+                              Math.ceil((stat.dueAt - Date.now()) / 86_400_000),
+                            )}d`}
+                      </small>
+                    </div>
                   </div>
                 );
               })}
