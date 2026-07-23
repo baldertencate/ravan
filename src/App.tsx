@@ -107,7 +107,16 @@ const emptyProgress: Progress = {
 function loadProgress(): Progress {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...emptyProgress, ...JSON.parse(raw) } : emptyProgress;
+    if (!raw) return emptyProgress;
+    const saved = { ...emptyProgress, ...JSON.parse(raw) } as Progress;
+    if (
+      saved.streak >= 15 &&
+      saved.activeLevel < LEVELS.length &&
+      saved.highestLevel <= saved.activeLevel
+    ) {
+      saved.highestLevel = saved.activeLevel + 1;
+    }
+    return saved;
   } catch {
     return emptyProgress;
   }
@@ -165,13 +174,6 @@ function dayDifference(a: string, b: string) {
   );
 }
 
-function durationBucket(durationMs: number) {
-  if (durationMs < 2_000) return "under_2s";
-  if (durationMs < 5_000) return "2_to_5s";
-  if (durationMs < 10_000) return "5_to_10s";
-  return "over_10s";
-}
-
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const fullPool = WORDS.filter((word) => word.level <= progress.activeLevel);
   const pool =
@@ -203,9 +205,25 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
   const mode: Mode =
     hasCorrectTransliteration && Math.random() < meaningChance ? "meaning" : "transliteration";
-  const distractors = shuffle(
-    pool.filter((word) => word.id !== target.id && word[mode] !== target[mode]),
-  ).slice(0, 3);
+  const otherMode: Mode = mode === "meaning" ? "transliteration" : "meaning";
+  const answerVariants = (answer: string) =>
+    answer
+      .trim()
+      .toLocaleLowerCase()
+      .split(/\s*\/\s*/)
+      .filter(Boolean);
+  const usedAnswers = new Set([
+    ...answerVariants(target[mode]),
+    ...answerVariants(target[otherMode]),
+  ]);
+  const distractors = shuffle(pool.filter((word) => word.id !== target.id))
+    .filter((word) => {
+      const answers = answerVariants(word[mode]);
+      if (answers.some((answer) => usedAnswers.has(answer))) return false;
+      answers.forEach((answer) => usedAnswers.add(answer));
+      return true;
+    })
+    .slice(0, 3);
   return { word: target, options: shuffle([target, ...distractors]), mode };
 }
 
@@ -266,6 +284,7 @@ export default function App() {
   const [installed, setInstalled] = useState(isStandalone);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
+  const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(null);
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
@@ -300,7 +319,9 @@ export default function App() {
   const unlockedLevel = progress.highestLevel;
   const graduationTarget = 15;
   const streakToGraduate = Math.max(0, graduationTarget - progress.streak);
-  const canGraduate = progress.streak >= graduationTarget && progress.activeLevel < 5;
+  const canGraduate =
+    progress.activeLevel < LEVELS.length &&
+    (progress.highestLevel > progress.activeLevel || progress.streak >= graduationTarget);
   const accuracy = progress.totalAnswers
     ? Math.round((progress.totalCorrect / progress.totalAnswers) * 100)
     : 0;
@@ -343,6 +364,21 @@ export default function App() {
   function levelUnlockHaptic() {
     if (!haptics || !("vibrate" in navigator)) return;
     navigator.vibrate(180);
+  }
+
+  function announceLevelUnlockIfEarned(correct: boolean) {
+    const nextLevel = progress.activeLevel + 1;
+    if (
+      !correct ||
+      progress.activeLevel >= LEVELS.length ||
+      progress.streak !== graduationTarget - 1 ||
+      progress.highestLevel >= nextLevel
+    ) {
+      return;
+    }
+    levelUnlockHaptic();
+    setLevelUnlockNotice(nextLevel);
+    trackEvent("Level Unlocked", { level: nextLevel });
   }
 
   async function installApp() {
@@ -457,12 +493,6 @@ export default function App() {
     trackSessionEvent("ravan-practice-started", "Practice Started", {
       level: progress.activeLevel,
     });
-    trackEvent(correct ? "Answer Correct" : "Answer Incorrect", {
-      exercise: "word",
-      mode: question.mode,
-      level: progress.activeLevel,
-      duration: durationBucket(elapsed),
-    });
     if ((session.answers + 1) % 10 === 0) {
       trackEvent("Practice Set Completed", {
         answers: session.answers + 1,
@@ -471,6 +501,7 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
+    announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -494,6 +525,12 @@ export default function App() {
       const dayStreak =
         current.lastStudyDay === today ? current.dayStreak : gap === 1 ? current.dayStreak + 1 : 1;
       const streak = correct ? current.streak + 1 : 0;
+      const highestLevel =
+        correct &&
+        current.streak === graduationTarget - 1 &&
+        current.activeLevel < LEVELS.length
+          ? Math.max(current.highestLevel, current.activeLevel + 1)
+          : current.highestLevel;
       return {
         ...current,
         words: {
@@ -519,6 +556,7 @@ export default function App() {
         totalMs: current.totalMs + elapsed,
         streak,
         bestStreak: Math.max(current.bestStreak, streak),
+        highestLevel,
         dayStreak,
         lastStudyDay: today,
       };
@@ -533,12 +571,6 @@ export default function App() {
     trackSessionEvent("ravan-practice-started", "Practice Started", {
       level: progress.activeLevel,
     });
-    trackEvent(correct ? "Answer Correct" : "Answer Incorrect", {
-      exercise: "pattern",
-      mode: patternExercise.stage,
-      level: progress.activeLevel,
-      duration: durationBucket(elapsed),
-    });
     if ((session.answers + 1) % 10 === 0) {
       trackEvent("Practice Set Completed", {
         answers: session.answers + 1,
@@ -547,6 +579,7 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
+    announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -563,6 +596,12 @@ export default function App() {
       const dayStreak =
         current.lastStudyDay === today ? current.dayStreak : gap === 1 ? current.dayStreak + 1 : 1;
       const streak = correct ? current.streak + 1 : 0;
+      const highestLevel =
+        correct &&
+        current.streak === graduationTarget - 1 &&
+        current.activeLevel < LEVELS.length
+          ? Math.max(current.highestLevel, current.activeLevel + 1)
+          : current.highestLevel;
       return {
         ...current,
         patternStats: {
@@ -578,6 +617,7 @@ export default function App() {
         totalMs: current.totalMs + elapsed,
         streak,
         bestStreak: Math.max(current.bestStreak, streak),
+        highestLevel,
         dayStreak,
         lastStudyDay: today,
       };
@@ -602,7 +642,7 @@ export default function App() {
 
   function graduate() {
     if (!canGraduate) return;
-    const nextLevel = Math.min(5, progress.activeLevel + 1);
+    const nextLevel = Math.min(LEVELS.length, progress.activeLevel + 1);
     const nextProgress = {
       ...progress,
       activeLevel: nextLevel,
@@ -616,8 +656,8 @@ export default function App() {
     setAnsweredCorrectly(null);
     setShowModeHelp(false);
     setSession({ correct: 0, answers: 0 });
+    setLevelUnlockNotice(null);
     startedAt.current = Date.now();
-    levelUnlockHaptic();
     trackEvent("Level Entered", { level: nextLevel, source: "unlock" });
   }
 
@@ -794,6 +834,34 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {levelUnlockNotice && (
+        <div className="level-unlock-backdrop">
+          <section
+            className="level-unlock-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="level-unlock-title"
+          >
+            <span className="level-unlock-spark" aria-hidden="true">✦</span>
+            <span className="eyebrow">A NEW READING STEP</span>
+            <h2 id="level-unlock-title">
+              Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
+            </h2>
+            <p>Level {levelUnlockNotice} unlocked!</p>
+            <div className="level-unlock-actions">
+              <button className="primary-action" onClick={graduate} autoFocus>
+                Go to Level {levelUnlockNotice} <span>→</span>
+              </button>
+              <button
+                className="text-action"
+                onClick={() => setLevelUnlockNotice(null)}
+              >
+                Stay on Level {progress.activeLevel}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       <header className="topbar">
         <button className="brand" onClick={() => setTab("learn")} aria-label="Ravân home">
           <span className="brand-mark" lang="fa" dir="rtl">روان</span>
@@ -839,24 +907,39 @@ export default function App() {
               <div className="graduation-copy">
                 <div>
                   <strong>
-                    {progress.activeLevel === 5
+                    {progress.activeLevel === LEVELS.length
                       ? "Top-level reading streak"
                       : canGraduate
                         ? `Level ${progress.activeLevel + 1} is ready`
                         : "Current answer streak"}
                   </strong>
                   <span>
-                    {progress.activeLevel === 5
+                    {progress.activeLevel === LEVELS.length
                       ? `${progress.streak} correct without a miss`
                       : canGraduate
                         ? "You earned the choice to move up."
                         : `${streakToGraduate} more in a row to unlock Level ${progress.activeLevel + 1}`}
                   </span>
                 </div>
-                {progress.activeLevel < 5 && (
-                  <div className="graduation-track" aria-label={`${progress.streak} of 15 correct answers`}>
-                    <span style={{ width: `${Math.min(100, (progress.streak / graduationTarget) * 100)}%` }} />
-                    <b>{progress.streak} / {graduationTarget} correct</b>
+                {progress.activeLevel < LEVELS.length && (
+                  <div
+                    className="graduation-track"
+                    aria-label={`${
+                      canGraduate ? graduationTarget : progress.streak
+                    } of ${graduationTarget} correct answers`}
+                  >
+                    <span
+                      style={{
+                        width: `${
+                          canGraduate
+                            ? 100
+                            : Math.min(100, (progress.streak / graduationTarget) * 100)
+                        }%`,
+                      }}
+                    />
+                    <b>
+                      {canGraduate ? graduationTarget : progress.streak} / {graduationTarget} correct
+                    </b>
                   </div>
                 )}
               </div>

@@ -542,6 +542,63 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   color: white; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
 }
 
+.level-unlock-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: rgba(27, 42, 33, .54);
+  backdrop-filter: blur(5px);
+}
+.level-unlock-splash {
+  width: min(100%, 430px);
+  padding: 34px 28px 27px;
+  border: 1px solid rgba(255, 255, 255, .65);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 85% 10%, rgba(220, 120, 77, .2), transparent 11rem),
+    var(--paper);
+  box-shadow: 0 28px 80px rgba(19, 33, 24, .28);
+  text-align: center;
+}
+.level-unlock-spark {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--green);
+  color: white;
+  font-size: 23px;
+}
+.level-unlock-splash h2 {
+  margin: 8px 0 4px;
+  color: var(--green-dark);
+  font-size: clamp(30px, 8vw, 42px);
+}
+.level-unlock-splash h2 span {
+  font-family: "Noto Naskh Arabic", serif;
+  font-size: .78em;
+  white-space: nowrap;
+}
+.level-unlock-splash > p {
+  margin: 0;
+  color: var(--orange);
+  font-family: Georgia, serif;
+  font-size: 21px;
+  font-weight: 700;
+}
+.level-unlock-actions {
+  margin-top: 27px;
+  display: grid;
+  gap: 3px;
+}
+.level-unlock-actions .primary-action { margin-top: 0; }
+.level-unlock-actions .text-action { min-height: 38px; }
+
 .word-card {
   position: relative; min-height: 245px; padding: 20px;
   background: var(--paper); border: 1px solid #e7e0d4; border-radius: 26px;

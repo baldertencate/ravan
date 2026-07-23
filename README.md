@@ -49,7 +49,7 @@ practice app at `https://baldertencate.github.io/ravan/app/`.
 
 ## Analytics
 
-Production builds send Umami a small set of explicit events such as practice starts, correct or
-incorrect answers, completed sets, installs, reminders, and level changes. Events contain only coarse
-context such as exercise type, level, and response-time range. The tracker is restricted to
+Production builds send Umami a small set of explicit events such as practice starts, one aggregate
+summary per ten answers, installs, reminders, and level changes. Individual correct and incorrect
+answers are not sent. Events contain only coarse counts and context; the tracker is restricted to
 `baldertencate.github.io`, so local development is not recorded.
