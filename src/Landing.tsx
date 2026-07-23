@@ -81,7 +81,17 @@ export default function Landing() {
           <div className="landing-section-heading">
             <div>
               <span className="eyebrow">HOW RAVÂN HELPS</span>
-              <h2>A measured bridge into Persian script.</h2>
+              <blockquote className="literary-quote landing-literary-quote">
+                <h2 lang="fa" dir="rtl">
+                  علم چندان که بیشتر خوانی
+                  <br />
+                  چون عمل در تو نیست نادانی
+                </h2>
+                <footer>
+                  <span>“However much you may read, knowledge without practice remains ignorance.”</span>
+                  <cite>Saadi</cite>
+                </footer>
+              </blockquote>
             </div>
             <p>Short, adaptive exercises train your eyes to recognize Persian words.</p>
           </div>

@@ -638,8 +638,13 @@ export default function App() {
           {onboardingStep === 0 && (
             <div className="onboarding-panel">
               <span className="eyebrow">PERSIAN SCRIPT, MADE APPROACHABLE</span>
-              <div className="onboarding-word" lang="fa" dir="rtl">بخوان</div>
-              <h1>Learn to read Farsi, one word at a time.</h1>
+              <blockquote className="literary-quote onboarding-quote onboarding-quote-hero">
+                <h1 lang="fa" dir="rtl">قطره قطره جمع کن، دریا نگر</h1>
+                <footer>
+                  <span>“Gather it drop by drop; behold the sea.”</span>
+                  <cite>Shah Nematollah Vali</cite>
+                </footer>
+              </blockquote>
               <p>Short, adaptive exercises train your eyes to recognize Persian words.</p>
               <div className="onboarding-benefits">
                 <span><b>01</b> Connect script to pronunciation, then to meaning</span>
@@ -656,6 +661,17 @@ export default function App() {
               <span className="eyebrow">A BRIDGE YOU GRADUALLY LEAVE BEHIND</span>
               <h1>Built to outgrow transliteration.</h1>
               <p>Ravân starts by connecting Persian spelling to sound, then shifts toward English meaning as each word becomes familiar.</p>
+              <blockquote className="literary-quote onboarding-quote onboarding-quote-compact">
+                <p lang="fa" dir="rtl">
+                  صورتش دیدی ز معنی غافلی
+                  <br />
+                  از صدف دُری گزین گر عاقلی
+                </p>
+                <footer>
+                  <span>“You saw the outward form and missed the meaning; choose the pearl from the shell.”</span>
+                  <cite>Rumi</cite>
+                </footer>
+              </blockquote>
               <div className="method-preview">
                 <div><span>در</span><strong>Sound bridge</strong><small>First match the script to <i>dar</i>.</small></div>
                 <div><span>می‌ـ</span><strong>Pattern checks</strong><small>Learn recurring chunks as visual units.</small></div>
@@ -1089,6 +1105,17 @@ export default function App() {
           <section className="about-view">
             <div className="page-intro">
               <span className="eyebrow">ABOUT RAVÂN</span>
+              <blockquote className="literary-quote about-literary-quote">
+                <p lang="fa" dir="rtl">
+                  درخت تو گر بار دانش بگیرد
+                  <br />
+                  به زیر آوری چرخ نیلوفری را
+                </p>
+                <footer>
+                  <span>“If your tree bears the fruit of knowledge, you can bring the azure heavens within reach.”</span>
+                  <cite>Naser Khosrow</cite>
+                </footer>
+              </blockquote>
               <h1>Helpful practice for learning to read Farsi.</h1>
               <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
             </div>
