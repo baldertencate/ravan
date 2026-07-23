@@ -1332,8 +1332,22 @@ export default function App() {
                     }
                   >
                     <span
+                      className="best-streak-fill"
                       style={{
-                        width: `${Math.min(100, (masteryProgress / masteryTarget) * 100)}%`,
+                        width: `${Math.min(
+                          100,
+                          (Math.min(activeMastery.bestStreak, masteryTarget) / masteryTarget) * 100,
+                        )}%`,
+                      }}
+                    />
+                    <span
+                      className="current-streak-fill"
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (Math.min(activeMastery.currentStreak, masteryTarget) / masteryTarget) *
+                            100,
+                        )}%`,
                       }}
                     />
                     <b>
