@@ -1255,22 +1255,19 @@ export default function App() {
                     {haptics ? "On" : "Off"}
                   </button>
                 </div>
-                <div>
-                  <span><strong>Introduction</strong><small>Review how Ravân’s reading practice works.</small></span>
-                  <button
-                    type="button"
-                    className="quiet-setting-action"
-                    onClick={() => {
-                      setOnboardingStep(0);
-                      setShowOnboarding(true);
-                      trackEvent("Onboarding Replayed");
-                    }}
-                  >
-                    Replay
-                  </button>
-                </div>
               </div>
             </div>
+            <button
+              type="button"
+              className="about-replay-link"
+              onClick={() => {
+                setOnboardingStep(0);
+                setShowOnboarding(true);
+                trackEvent("Onboarding Replayed");
+              }}
+            >
+              Replay introduction
+            </button>
           </section>
         )}
       </main>

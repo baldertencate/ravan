@@ -427,7 +427,7 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   font-size: 10px;
   text-decoration: none;
 }
-.calendar-file-action, .quiet-setting-action {
+.calendar-file-action, .about-replay-link {
   border: 0;
   background: none;
   color: var(--muted);
@@ -739,10 +739,10 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .preference-list > div > span { display: flex; flex-direction: column; gap: 3px; }
 .preference-list strong { font-size: 11px; }
 .preference-list small { color: var(--muted); font-size: 9px; }
-.quiet-setting-action {
-  min-height: 34px;
-  padding: 6px 0 6px 12px;
-  color: var(--green);
+.about-replay-link {
+  display: block;
+  margin: 20px auto 4px;
+  padding: 7px 10px;
 }
 
 .word-table { background: var(--paper); border: 1px solid #e4ded2; border-radius: 20px; overflow: hidden; }
