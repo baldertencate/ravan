@@ -7,6 +7,7 @@ A mobile-first progressive web app for learning to read Persian through adaptive
 - Builds from short, frequent letter patterns toward longer everyday words
 - Uses spaced repetition: misses return quickly; successful words wait longer
 - Fades transliteration as the learner improves, replacing it with English meaning
+- Teaches recurring visual chunks such as `می‌ـ`, `نمی‌ـ`, plural `ـها`, and common verb endings
 - Tracks accuracy, answer speed, daily streaks, and per-word progress locally
 - Works offline after the first visit
 

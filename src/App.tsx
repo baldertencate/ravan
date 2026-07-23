@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
 import vowelData from "./data/vowels.json";
+import patternsData from "./data/patterns.json";
 
 type Mode = "meaning" | "transliteration";
 type Tab = "learn" | "journey" | "words";
@@ -33,14 +34,26 @@ type Progress = {
   lastStudyDay: string;
   activeLevel: number;
   highestLevel: number;
+  patternViews: Record<string, number>;
 };
 type Question = { word: Word; options: Word[]; mode: Mode };
+type Pattern = {
+  id: string;
+  form: string;
+  chunk: string;
+  name: string;
+  meaning: string;
+  level: number;
+  position: "prefix" | "suffix";
+  examples: { word: string; meaning: string }[];
+};
 
 const VOWELLED = vowelData as Record<string, string>;
 const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
   ...word,
   vowelled: VOWELLED[word.id] ?? word.persian,
 }));
+const PATTERNS = patternsData as Pattern[];
 const STORAGE_KEY = "ravan-progress-v1";
 const VOWEL_KEY = "ravan-show-vowels-v1";
 const LEVELS = [
@@ -62,6 +75,7 @@ const emptyProgress: Progress = {
   lastStudyDay: "",
   activeLevel: 1,
   highestLevel: 1,
+  patternViews: {},
 };
 
 function loadProgress(): Progress {
@@ -170,6 +184,31 @@ export default function App() {
     return stat && stat.dueAt <= Date.now();
   }).length;
   const translitShare = Math.max(12, Math.round(75 - Math.min(63, progress.totalCorrect * 0.45)));
+  const availablePatterns = PATTERNS.filter((pattern) => pattern.level <= progress.activeLevel);
+  const activePattern = availablePatterns.length
+    ? availablePatterns[session.answers % availablePatterns.length]
+    : null;
+  const patternIsIsolated = activePattern
+    ? (progress.patternViews[activePattern.id] ?? 0) < 3
+    : false;
+  const matchedPattern = PATTERNS.find(
+    (pattern) =>
+      pattern.level <= progress.activeLevel &&
+      pattern.chunk.length > 1 &&
+      question.word.persian.includes(pattern.chunk),
+  );
+
+  function highlightPattern(text: string, pattern: Pattern) {
+    const index = text.indexOf(pattern.chunk);
+    if (index < 0) return text;
+    return (
+      <>
+        {text.slice(0, index)}
+        <mark>{text.slice(index, index + pattern.chunk.length)}</mark>
+        {text.slice(index + pattern.chunk.length)}
+      </>
+    );
+  }
 
   function answer(option: Word) {
     if (selected) return;
@@ -220,6 +259,12 @@ export default function App() {
         bestStreak: Math.max(current.bestStreak, streak),
         dayStreak,
         lastStudyDay: today,
+        patternViews: activePattern
+          ? {
+              ...current.patternViews,
+              [activePattern.id]: (current.patternViews[activePattern.id] ?? 0) + 1,
+            }
+          : current.patternViews,
       };
     });
   }
@@ -380,7 +425,18 @@ export default function App() {
                   )}
                 </div>
               )}
-              <div className="persian-word" lang="fa" dir="rtl">{displayWord(question.word)}</div>
+              <div className="persian-word" lang="fa" dir="rtl">
+                {!showVowels && matchedPattern
+                  ? highlightPattern(question.word.persian, matchedPattern)
+                  : displayWord(question.word)}
+              </div>
+              {matchedPattern && (
+                <div className="word-pattern-note">
+                  <span lang="fa" dir="rtl">{matchedPattern.form}</span>
+                  <strong>{matchedPattern.name}</strong>
+                  <small>{matchedPattern.meaning}</small>
+                </div>
+              )}
               <p className="prompt">
                 Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
               </p>
@@ -429,6 +485,46 @@ export default function App() {
                 <Icon name="spark" />
                 <span><strong>Adapting to you.</strong> Missed words return sooner.</span>
               </div>
+            )}
+
+            {activePattern && (
+              <aside className="pattern-pulse">
+                <div className="pattern-pulse-heading">
+                  <div>
+                    <span className="eyebrow">
+                      PATTERN SPOTLIGHT · {patternIsIsolated ? "ISOLATION" : "IN CONTEXT"}
+                    </span>
+                    <h2><b lang="fa" dir="rtl">{activePattern.form}</b> {activePattern.name}</h2>
+                  </div>
+                  <span>{activePattern.meaning}</span>
+                </div>
+                {patternIsIsolated ? (
+                  <div className="pattern-isolation">
+                    <strong lang="fa" dir="rtl">{activePattern.form}</strong>
+                    <span>Learn this silhouette as one unit. Examples appear after three short exposures.</span>
+                    <div aria-label={`${progress.patternViews[activePattern.id] ?? 0} of 3 isolation exposures`}>
+                      {[0, 1, 2].map((step) => (
+                        <i
+                          className={step < (progress.patternViews[activePattern.id] ?? 0) ? "complete" : ""}
+                          key={step}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="pattern-examples">
+                      {activePattern.examples.map((example) => (
+                        <div key={example.word}>
+                          <strong lang="fa" dir="rtl">{highlightPattern(example.word, activePattern)}</strong>
+                          <small>{example.meaning}</small>
+                        </div>
+                      ))}
+                    </div>
+                    <p>Now spot the highlighted chunk inside complete, inflected words.</p>
+                  </>
+                )}
+              </aside>
             )}
           </section>
         )}
@@ -491,6 +587,24 @@ export default function App() {
                 <span className="eyebrow">TRANSLITERATION FADE</span>
                 <h2>Training your eyes, not a crutch.</h2>
                 <p>Early questions connect script to sound. As your answers improve, Ravân replaces transliterations with meaning until you read Persian directly.</p>
+              </div>
+            </div>
+            <div className="section-card pattern-library">
+              <div className="section-heading">
+                <div><span className="eyebrow">PATTERN LIBRARY</span><h2>Read in useful chunks</h2></div>
+                <span>{PATTERNS.filter((pattern) => pattern.level <= unlockedLevel).length} unlocked</span>
+              </div>
+              <div className="pattern-grid">
+                {PATTERNS.map((pattern) => {
+                  const locked = pattern.level > unlockedLevel;
+                  return (
+                    <div className={`pattern-tile ${locked ? "locked" : ""}`} key={pattern.id}>
+                      <div><strong lang="fa" dir="rtl">{locked ? "—" : pattern.form}</strong><span>Level {pattern.level}</span></div>
+                      <h3>{pattern.name}</h3>
+                      <p>{locked ? "Graduate to reveal this pattern." : pattern.meaning}</p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>

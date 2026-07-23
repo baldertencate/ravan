@@ -1,0 +1,114 @@
+[
+  {
+    "id": "p-mi",
+    "form": "می‌ـ",
+    "chunk": "می‌",
+    "name": "Ongoing or habitual action",
+    "meaning": "Often marks a present or repeated verb.",
+    "level": 2,
+    "position": "prefix",
+    "examples": [
+      {"word": "می‌روم", "meaning": "I go / I am going"},
+      {"word": "می‌خواند", "meaning": "he/she reads"},
+      {"word": "می‌نویسیم", "meaning": "we write"}
+    ]
+  },
+  {
+    "id": "p-ha",
+    "form": "ـها",
+    "chunk": "ها",
+    "name": "Plural",
+    "meaning": "Turns many nouns into more than one.",
+    "level": 2,
+    "position": "suffix",
+    "examples": [
+      {"word": "کتاب‌ها", "meaning": "books"},
+      {"word": "خانه‌ها", "meaning": "houses"},
+      {"word": "روزها", "meaning": "days"}
+    ]
+  },
+  {
+    "id": "p-nemi",
+    "form": "نمی‌ـ",
+    "chunk": "نمی‌",
+    "name": "Negative ongoing action",
+    "meaning": "Combines negation with the common می‌ verb shape.",
+    "level": 3,
+    "position": "prefix",
+    "examples": [
+      {"word": "نمی‌دانم", "meaning": "I don't know"},
+      {"word": "نمی‌رود", "meaning": "he/she doesn't go"},
+      {"word": "نمی‌خوانیم", "meaning": "we don't read"}
+    ]
+  },
+  {
+    "id": "p-tar",
+    "form": "ـتر",
+    "chunk": "تر",
+    "name": "Comparative",
+    "meaning": "Often corresponds to English “-er” or “more”.",
+    "level": 3,
+    "position": "suffix",
+    "examples": [
+      {"word": "بزرگ‌تر", "meaning": "bigger"},
+      {"word": "سریع‌تر", "meaning": "faster"},
+      {"word": "آسان‌تر", "meaning": "easier"}
+    ]
+  },
+  {
+    "id": "p-possessive",
+    "form": "ـم · ـت · ـش",
+    "chunk": "ش",
+    "name": "Possessive endings",
+    "meaning": "Small endings can mean my, your, or his/her.",
+    "level": 3,
+    "position": "suffix",
+    "examples": [
+      {"word": "کتابم", "meaning": "my book"},
+      {"word": "خانه‌ات", "meaning": "your house"},
+      {"word": "دوستش", "meaning": "his/her friend"}
+    ]
+  },
+  {
+    "id": "p-endings",
+    "form": "ـم · ـی · ـد",
+    "chunk": "م",
+    "name": "Verb person endings",
+    "meaning": "The ending tells you who is doing the action.",
+    "level": 3,
+    "position": "suffix",
+    "examples": [
+      {"word": "می‌روم", "meaning": "I go"},
+      {"word": "می‌روی", "meaning": "you go"},
+      {"word": "می‌رود", "meaning": "he/she goes"}
+    ]
+  },
+  {
+    "id": "p-tarin",
+    "form": "ـترین",
+    "chunk": "ترین",
+    "name": "Superlative",
+    "meaning": "Often corresponds to English “-est” or “most”.",
+    "level": 4,
+    "position": "suffix",
+    "examples": [
+      {"word": "بهترین", "meaning": "best"},
+      {"word": "بزرگ‌ترین", "meaning": "biggest"},
+      {"word": "سریع‌ترین", "meaning": "fastest"}
+    ]
+  },
+  {
+    "id": "p-be",
+    "form": "بـ",
+    "chunk": "ب",
+    "name": "Command or possibility",
+    "meaning": "A frequent verb prefix in commands and subjunctive forms.",
+    "level": 4,
+    "position": "prefix",
+    "examples": [
+      {"word": "بخوان", "meaning": "read!"},
+      {"word": "برو", "meaning": "go!"},
+      {"word": "بنویس", "meaning": "write!"}
+    ]
+  }
+]
