@@ -295,16 +295,6 @@ export default function App() {
                 <div className="session-score">
                   <strong>{session.correct}</strong><span>/ {session.answers || 0}</span>
                 </div>
-                <button
-                  type="button"
-                  className="vowel-toggle"
-                  role="switch"
-                  aria-checked={showVowels}
-                  onClick={() => setShowVowels((visible) => !visible)}
-                >
-                  <span className="toggle-track"><span /></span>
-                  Vowel marks
-                </button>
               </div>
             </div>
 
@@ -316,6 +306,10 @@ export default function App() {
               <div className="streak-orb">
                 <Icon name="flame" />
                 <strong>{progress.streak}</strong>
+              </div>
+              <div className="current-level">
+                <span>LEVEL</span>
+                <strong>{progress.activeLevel}</strong>
               </div>
               <div className="graduation-copy">
                 <div>
@@ -356,7 +350,16 @@ export default function App() {
                   {question.mode === "meaning" ? "MEANING" : "SOUND BRIDGE"}
                   <span className="help-mark">?</span>
                 </button>
-                <span className="practice-level">LEVEL {progress.activeLevel} · {LEVELS[progress.activeLevel - 1].title}</span>
+                <button
+                  type="button"
+                  className="vowel-toggle card-vowel-toggle"
+                  role="switch"
+                  aria-checked={showVowels}
+                  onClick={() => setShowVowels((visible) => !visible)}
+                >
+                  <span className="toggle-track"><span /></span>
+                  Vowel marks
+                </button>
               </div>
               {showModeHelp && (
                 <div className="mode-explainer" id="question-mode-help">
