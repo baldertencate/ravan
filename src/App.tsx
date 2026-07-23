@@ -317,7 +317,7 @@ function choosePatternExercise(progress: Progress): PatternExercise {
     const stat = progress.patternStats[pattern.id];
     return {
       pattern,
-      weight: stat ? 1 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6 : 12,
+      weight: stat ? 4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6 : 10,
     };
   });
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -329,7 +329,7 @@ function choosePatternExercise(progress: Progress): PatternExercise {
     })?.pattern ?? available[0];
   const stat = progress.patternStats[pattern.id];
   const stage: "isolation" | "context" =
-    stat && stat.seen >= 3 && stat.correct / stat.seen >= 0.67 ? "context" : "isolation";
+    stat && stat.correct >= 1 ? "context" : "isolation";
   const example = pattern.examples[(stat?.seen ?? 0) % pattern.examples.length];
   const distractors = shuffle(PATTERNS.filter((item) => item.id !== pattern.id)).slice(0, 3);
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
@@ -418,7 +418,7 @@ export default function App() {
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
   const masteryProgress = upcomingMasteryStage
     ? Math.min(activeMastery.currentStreak, masteryTarget)
-    : masteryTarget;
+    : activeMastery.currentStreak;
   const masteryRemaining = Math.max(0, masteryTarget - activeMastery.currentStreak);
   const streakToGraduate = Math.max(0, LEVEL_UNLOCK_STREAK - activeMastery.currentStreak);
   const canGraduate =
@@ -798,7 +798,7 @@ export default function App() {
 
   function nextQuestion() {
     const nextProgress = { ...progress };
-    const patternNext = progress.activeLevel >= 2 && (session.answers + 1) % 4 === 0;
+    const patternNext = progress.activeLevel >= 2 && (session.answers + 1) % 3 === 0;
     if (patternNext) {
       setPatternExercise(choosePatternExercise(nextProgress));
       setExerciseKind("pattern");
@@ -1158,14 +1158,16 @@ export default function App() {
                             ? ` and unlock Level ${progress.activeLevel + 1}`
                             : ""
                         }`
-                      : "Your bouquet is fully grown at this level."}
+                      : "Your bouquet is fully grown. Keep your streak going."}
                   </span>
                 </div>
                 <div
                   className="graduation-track"
-                  aria-label={`${masteryProgress} of ${masteryTarget} correct answers toward ${
-                    upcomingMasteryStage?.name ?? "Bouquet"
-                  } mastery`}
+                  aria-label={
+                    upcomingMasteryStage
+                      ? `${masteryProgress} of ${masteryTarget} correct answers toward ${upcomingMasteryStage.name} mastery`
+                      : `Current answer streak: ${activeMastery.currentStreak}`
+                  }
                 >
                   <span
                     style={{
@@ -1173,7 +1175,9 @@ export default function App() {
                     }}
                   />
                   <b>
-                    {masteryProgress} / {masteryTarget} correct
+                    {upcomingMasteryStage
+                      ? `${masteryProgress} / ${masteryTarget} correct`
+                      : `Current streak: ${activeMastery.currentStreak}`}
                   </b>
                 </div>
               </div>
