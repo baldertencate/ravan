@@ -19,6 +19,7 @@ type WordProgress = {
   seen: number;
   correct: number;
   wrong: number;
+  transliterationCorrect: number;
   interval: number;
   dueAt: number;
   avgMs: number;
@@ -141,7 +142,9 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const mastery = stat ? stat.correct / Math.max(3, stat.seen) : 0;
   const globalFade = Math.min(0.88, progress.totalCorrect / 140);
   const meaningChance = Math.max(0.22, Math.min(0.95, 0.25 + mastery * 0.5 + globalFade));
-  const mode: Mode = Math.random() < meaningChance ? "meaning" : "transliteration";
+  const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
+  const mode: Mode =
+    hasCorrectTransliteration && Math.random() < meaningChance ? "meaning" : "transliteration";
   const distractors = shuffle(
     pool.filter((word) => word.id !== target.id && word[mode] !== target[mode]),
   ).slice(0, 3);
@@ -257,6 +260,7 @@ export default function App() {
         seen: 0,
         correct: 0,
         wrong: 0,
+        transliterationCorrect: 0,
         interval: 0,
         dueAt: 0,
         avgMs: 0,
@@ -276,6 +280,9 @@ export default function App() {
             seen: previous.seen + 1,
             correct: previous.correct + (correct ? 1 : 0),
             wrong: previous.wrong + (correct ? 0 : 1),
+            transliterationCorrect:
+              (previous.transliterationCorrect ?? 0) +
+              (correct && question.mode === "transliteration" ? 1 : 0),
             interval,
             dueAt: Date.now() + interval * 86_400_000,
             avgMs: previous.seen
