@@ -22,6 +22,8 @@ type WordProgress = {
   correct: number;
   wrong: number;
   transliterationCorrect: number;
+  meaningCorrect?: number;
+  lastAnswerCorrect?: boolean;
   interval: number;
   dueAt: number;
   avgMs: number;
@@ -31,10 +33,14 @@ type PatternProgress = {
   correct: number;
   wrong: number;
   contextSeen?: number;
+  isolationCorrect?: number;
+  contextCorrect?: number;
+  lastAnswerCorrect?: boolean;
 };
 type LevelMastery = {
   currentStreak: number;
   bestStreak: number;
+  earnedThreshold: number;
 };
 type MasteryCelebration = {
   level: number;
@@ -104,27 +110,27 @@ const LEVELS = [
 const MASTERY_STAGES = [
   {
     threshold: 10,
+    coverage: 0.25,
     name: "Sprout",
     image: `${import.meta.env.BASE_URL}mastery/sprout.png`,
-    nextCopy: "grow your first sprout",
   },
   {
     threshold: 15,
+    coverage: 0.5,
     name: "Bud",
     image: `${import.meta.env.BASE_URL}mastery/bud.png`,
-    nextCopy: "grow a closed flower bud",
   },
   {
     threshold: 20,
+    coverage: 0.75,
     name: "Bloom",
     image: `${import.meta.env.BASE_URL}mastery/bloom.png`,
-    nextCopy: "open your flower",
   },
   {
     threshold: 25,
+    coverage: 1,
     name: "Bouquet",
     image: `${import.meta.env.BASE_URL}mastery/bouquet.png`,
-    nextCopy: "complete your bouquet",
   },
 ] as const;
 
@@ -148,17 +154,14 @@ function loadProgress(): Progress {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return emptyProgress;
     const saved = { ...emptyProgress, ...JSON.parse(raw) } as Progress;
-    if (
-      saved.streak >= LEVEL_UNLOCK_STREAK &&
-      saved.activeLevel < LEVELS.length &&
-      saved.highestLevel <= saved.activeLevel
-    ) {
-      saved.highestLevel = saved.activeLevel + 1;
-    }
     if (!saved.levelMastery || !Object.keys(saved.levelMastery).length) {
       const migrated: Record<string, LevelMastery> = {};
       for (let level = 1; level < saved.highestLevel; level += 1) {
-        migrated[level] = { currentStreak: 0, bestStreak: LEVEL_UNLOCK_STREAK };
+        migrated[level] = {
+          currentStreak: 0,
+          bestStreak: LEVEL_UNLOCK_STREAK,
+          earnedThreshold: LEVEL_UNLOCK_STREAK,
+        };
       }
       migrated[saved.activeLevel] = {
         currentStreak: saved.streak,
@@ -166,9 +169,25 @@ function loadProgress(): Progress {
           saved.highestLevel === 1
             ? Math.max(saved.streak, saved.bestStreak)
             : saved.streak,
+        earnedThreshold:
+          masteryStage(
+            saved.highestLevel === 1
+              ? Math.max(saved.streak, saved.bestStreak)
+              : saved.streak,
+          )?.threshold ?? 0,
       };
       saved.levelMastery = migrated;
     }
+    saved.levelMastery = Object.fromEntries(
+      Object.entries(saved.levelMastery).map(([level, mastery]) => [
+        level,
+        {
+          ...mastery,
+          earnedThreshold:
+            mastery.earnedThreshold ?? masteryStage(mastery.bestStreak)?.threshold ?? 0,
+        },
+      ]),
+    );
     return saved;
   } catch {
     return emptyProgress;
@@ -176,15 +195,71 @@ function loadProgress(): Progress {
 }
 
 function levelMastery(progress: Progress, level = progress.activeLevel): LevelMastery {
-  return progress.levelMastery[level] ?? { currentStreak: 0, bestStreak: 0 };
+  return progress.levelMastery[level] ?? {
+    currentStreak: 0,
+    bestStreak: 0,
+    earnedThreshold: 0,
+  };
 }
 
-function masteryStage(bestStreak: number) {
-  return [...MASTERY_STAGES].reverse().find((stage) => bestStreak >= stage.threshold) ?? null;
+function masteryStage(earnedThreshold: number) {
+  return [...MASTERY_STAGES].reverse().find((stage) => earnedThreshold >= stage.threshold) ?? null;
 }
 
-function nextMasteryStage(bestStreak: number) {
-  return MASTERY_STAGES.find((stage) => bestStreak < stage.threshold) ?? null;
+function nextMasteryStage(earnedThreshold: number) {
+  return MASTERY_STAGES.find((stage) => earnedThreshold < stage.threshold) ?? null;
+}
+
+function wordIsMastered(stat?: WordProgress) {
+  return Boolean(
+    stat &&
+      stat.transliterationCorrect >= 1 &&
+      (stat.meaningCorrect ?? 0) >= 2 &&
+      stat.lastAnswerCorrect !== false,
+  );
+}
+
+function patternIsMastered(stat?: PatternProgress) {
+  return Boolean(
+    stat &&
+      (stat.isolationCorrect ?? 0) >= 1 &&
+      (stat.contextCorrect ?? 0) >= 1 &&
+      stat.lastAnswerCorrect !== false,
+  );
+}
+
+function levelEvidence(progress: Progress, level = progress.activeLevel) {
+  const words = WORDS.filter((word) => word.level === level);
+  const patterns = PATTERNS.filter((pattern) => pattern.level === level);
+  const masteredWords = words.filter((word) => wordIsMastered(progress.words[word.id])).length;
+  const masteredPatterns = patterns.filter((pattern) =>
+    patternIsMastered(progress.patternStats[pattern.id]),
+  ).length;
+  return {
+    wordCount: words.length,
+    masteredWords,
+    patternCount: patterns.length,
+    masteredPatterns,
+  };
+}
+
+function requiredWordsForStage(wordCount: number, coverage: number) {
+  return Math.ceil(wordCount * coverage);
+}
+
+function highestEligibleMasteryStage(progress: Progress, level = progress.activeLevel) {
+  const mastery = levelMastery(progress, level);
+  const evidence = levelEvidence(progress, level);
+  return (
+    [...MASTERY_STAGES].reverse().find((stage) => {
+      const wordsReady =
+        evidence.masteredWords >= requiredWordsForStage(evidence.wordCount, stage.coverage);
+      const patternsReady =
+        stage.threshold < MASTERY_STAGES.at(-1)!.threshold ||
+        evidence.masteredPatterns >= evidence.patternCount;
+      return mastery.bestStreak >= stage.threshold && wordsReady && patternsReady;
+    }) ?? null
+  );
 }
 
 function loadReminder(): ReminderSettings {
@@ -266,7 +341,32 @@ function answerLabel(word: Word, mode: Mode) {
 }
 
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
-  const fullPool = WORDS.filter((word) => word.level <= progress.activeLevel);
+  const answerPool = WORDS.filter((word) => word.level <= progress.activeLevel);
+  const currentLevelPool = WORDS.filter((word) => word.level === progress.activeLevel);
+  const reviewPool = WORDS.filter((word) => word.level < progress.activeLevel);
+  const growingWords = currentLevelPool.filter(
+    (word) => progress.words[word.id] && !wordIsMastered(progress.words[word.id]),
+  );
+  const unseenWords = currentLevelPool
+    .filter((word) => !progress.words[word.id])
+    .sort((a, b) => a.rank - b.rank);
+  const learningWave = [
+    ...growingWords,
+    ...unseenWords.slice(0, Math.max(0, 8 - growingWords.length)),
+  ];
+  const masteredCurrentWords = currentLevelPool.filter((word) =>
+    wordIsMastered(progress.words[word.id]),
+  );
+  const focusedCurrentPool =
+    learningWave.length && (masteredCurrentWords.length === 0 || Math.random() < 0.85)
+      ? learningWave
+      : masteredCurrentWords.length
+        ? masteredCurrentWords
+        : currentLevelPool;
+  const fullPool =
+    reviewPool.length === 0 || Math.random() < 0.78
+      ? focusedCurrentPool
+      : reviewPool;
   const pool =
     excludeWordId && fullPool.length > 1
       ? fullPool.filter((word) => word.id !== excludeWordId)
@@ -274,12 +374,15 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const now = Date.now();
   const weighted = pool.map((word) => {
     const stat = progress.words[word.id];
-    if (!stat) return { word, weight: 12 + (101 - word.rank) / 30 };
+    if (!stat) return { word, weight: 15 + (101 - word.rank) / 30 };
     const accuracy = stat.correct / Math.max(1, stat.seen);
     const overdue = Math.max(0, now - stat.dueAt) / 3_600_000;
     return {
       word,
-      weight: 1 + stat.wrong * 2.5 + (1 - accuracy) * 8 + Math.min(10, overdue),
+      weight:
+        (wordIsMastered(stat) ? 1.5 : 9) +
+        (1 - accuracy) * 8 +
+        Math.min(10, overdue),
     };
   });
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -294,14 +397,18 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const globalFade = Math.min(0.88, progress.totalCorrect / 140);
   const meaningChance = Math.max(0.22, Math.min(0.95, 0.25 + mastery * 0.5 + globalFade));
   const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
-  const mode: Mode =
-    hasCorrectTransliteration && Math.random() < meaningChance ? "meaning" : "transliteration";
+  const needsMeaningEvidence = (stat?.meaningCorrect ?? 0) < 2;
+  const mode: Mode = !hasCorrectTransliteration
+    ? "transliteration"
+    : needsMeaningEvidence || Math.random() < meaningChance
+      ? "meaning"
+      : "transliteration";
   const otherMode: Mode = mode === "meaning" ? "transliteration" : "meaning";
   const usedAnswers = new Set([
     ...answerVariants(target, mode),
     ...answerVariants(target, otherMode),
   ]);
-  const distractors = shuffle(pool.filter((word) => word.id !== target.id))
+  const distractors = shuffle(answerPool.filter((word) => word.id !== target.id))
     .filter((word) => {
       const answers = answerVariants(word, mode);
       if (answers.some((answer) => usedAnswers.has(answer))) return false;
@@ -323,9 +430,11 @@ function choosePatternExercise(progress: Progress, excludePatternId?: string): P
     const contextPenalty = 1 + (stat?.contextSeen ?? 0) * 0.75;
     return {
       pattern,
-      weight: stat
-        ? (4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6) / contextPenalty
-        : 10,
+      weight:
+        (stat
+          ? (4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6) / contextPenalty
+          : 10) *
+        (pattern.level === progress.activeLevel && !patternIsMastered(stat) ? 3 : 1),
     };
   });
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -336,8 +445,9 @@ function choosePatternExercise(progress: Progress, excludePatternId?: string): P
       return pick <= 0;
     })?.pattern ?? available[0];
   const stat = progress.patternStats[pattern.id];
+  const needsIsolationSuccess = (stat?.isolationCorrect ?? 0) < 1;
   const stage: "isolation" | "context" =
-    stat && stat.seen >= 1 ? "context" : "isolation";
+    !stat || (needsIsolationSuccess && stat.seen % 2 === 0) ? "isolation" : "context";
   const example = pattern.examples[(stat?.seen ?? 0) % pattern.examples.length];
   const distractors = shuffle(PATTERNS.filter((item) => item.id !== pattern.id)).slice(0, 3);
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
@@ -381,6 +491,7 @@ export default function App() {
   const [masteryCelebration, setMasteryCelebration] = useState<MasteryCelebration | null>(null);
   const startedAt = useRef(Date.now());
   const masteryCelebrationTimer = useRef<number | null>(null);
+  const awardedStageRef = useRef("");
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
   useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
@@ -398,6 +509,70 @@ export default function App() {
     trackSessionEvent("ravan-app-opened", "App Opened");
     if (showOnboarding) trackSessionEvent("ravan-onboarding-started", "Onboarding Started");
   }, [showOnboarding]);
+  useEffect(() => {
+    const currentMastery = levelMastery(progress);
+    const eligibleStage = highestEligibleMasteryStage(progress);
+    if (!eligibleStage || eligibleStage.threshold <= currentMastery.earnedThreshold) return;
+
+    const awardKey = `${progress.activeLevel}-${eligibleStage.threshold}`;
+    if (awardedStageRef.current === awardKey) return;
+    awardedStageRef.current = awardKey;
+    const unlocksNextLevel =
+      eligibleStage.threshold >= LEVEL_UNLOCK_STREAK &&
+      currentMastery.earnedThreshold < LEVEL_UNLOCK_STREAK &&
+      progress.activeLevel < LEVELS.length &&
+      progress.highestLevel < progress.activeLevel + 1;
+
+    setProgress((current) => {
+      const mastery = levelMastery(current);
+      if (mastery.earnedThreshold >= eligibleStage.threshold) return current;
+      return {
+        ...current,
+        highestLevel: unlocksNextLevel
+          ? Math.max(current.highestLevel, current.activeLevel + 1)
+          : current.highestLevel,
+        levelMastery: {
+          ...current.levelMastery,
+          [current.activeLevel]: {
+            ...mastery,
+            earnedThreshold: eligibleStage.threshold,
+          },
+        },
+      };
+    });
+
+    if (masteryCelebrationTimer.current) {
+      window.clearTimeout(masteryCelebrationTimer.current);
+    }
+    setMasteryCelebration({
+      level: progress.activeLevel,
+      threshold: eligibleStage.threshold,
+    });
+    masteryCelebrationTimer.current = window.setTimeout(
+      () => setMasteryCelebration(null),
+      1_600,
+    );
+
+    if (unlocksNextLevel) {
+      levelUnlockHaptic();
+      setLevelUnlockNotice(progress.activeLevel + 1);
+      trackEvent("Level Unlocked", { level: progress.activeLevel + 1 });
+    } else {
+      flowerGrowthHaptic(eligibleStage.threshold);
+    }
+    trackEvent("Flower Stage Earned", {
+      level: progress.activeLevel,
+      stage: eligibleStage.name,
+      streak: currentMastery.bestStreak,
+    });
+  }, [
+    haptics,
+    progress.activeLevel,
+    progress.highestLevel,
+    progress.levelMastery,
+    progress.patternStats,
+    progress.words,
+  ]);
   useEffect(() => {
     function captureInstallPrompt(event: Event) {
       event.preventDefault();
@@ -421,14 +596,37 @@ export default function App() {
 
   const unlockedLevel = progress.highestLevel;
   const activeMastery = levelMastery(progress);
-  const earnedMasteryStage = masteryStage(activeMastery.bestStreak);
-  const upcomingMasteryStage = nextMasteryStage(activeMastery.bestStreak);
+  const activeEvidence = levelEvidence(progress);
+  const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
+  const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
   const masteryProgress = upcomingMasteryStage
-    ? Math.min(activeMastery.currentStreak, masteryTarget)
+    ? Math.min(activeMastery.bestStreak, masteryTarget)
     : activeMastery.currentStreak;
-  const masteryRemaining = Math.max(0, masteryTarget - activeMastery.currentStreak);
-  const streakToGraduate = Math.max(0, LEVEL_UNLOCK_STREAK - activeMastery.currentStreak);
+  const masteryRemaining = Math.max(0, masteryTarget - activeMastery.bestStreak);
+  const requiredMasteredWords = upcomingMasteryStage
+    ? requiredWordsForStage(activeEvidence.wordCount, upcomingMasteryStage.coverage)
+    : activeEvidence.wordCount;
+  const wordsToNextStage = Math.max(0, requiredMasteredWords - activeEvidence.masteredWords);
+  const patternsToNextStage =
+    upcomingMasteryStage?.threshold === MASTERY_STAGES.at(-1)!.threshold
+      ? Math.max(0, activeEvidence.patternCount - activeEvidence.masteredPatterns)
+      : 0;
+  const nextGoalParts = upcomingMasteryStage
+    ? [
+        masteryRemaining > 0
+          ? `${masteryRemaining} more for a best streak of ${masteryTarget}`
+          : "",
+        wordsToNextStage > 0
+          ? `master ${wordsToNextStage} more ${wordsToNextStage === 1 ? "word" : "words"}`
+          : "",
+        patternsToNextStage > 0
+          ? `complete ${patternsToNextStage} more ${
+              patternsToNextStage === 1 ? "pattern" : "patterns"
+            }`
+          : "",
+      ].filter(Boolean)
+    : [];
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
     progress.highestLevel > progress.activeLevel;
@@ -438,9 +636,7 @@ export default function App() {
   const averageSeconds = progress.totalAnswers
     ? (progress.totalMs / progress.totalAnswers / 1000).toFixed(1)
     : "—";
-  const mastered = Object.values(progress.words).filter(
-    (stat) => stat.seen >= 3 && stat.correct / stat.seen >= 0.8,
-  ).length;
+  const mastered = Object.values(progress.words).filter(wordIsMastered).length;
   const dueCount = WORDS.filter((word) => {
     const stat = progress.words[word.id];
     return stat && stat.dueAt <= Date.now();
@@ -478,57 +674,6 @@ export default function App() {
   function flowerGrowthHaptic(threshold: number) {
     if (!haptics || !("vibrate" in navigator)) return;
     navigator.vibrate(threshold === 25 ? [35, 35, 75] : [30, 30, 50]);
-  }
-
-  function announceMasteryIfEarned(correct: boolean) {
-    if (!correct) return;
-    const nextStreak = activeMastery.currentStreak + 1;
-    const earnedStage = MASTERY_STAGES.find(
-      (stage) =>
-        stage.threshold === nextStreak &&
-        activeMastery.bestStreak < stage.threshold,
-    );
-    if (!earnedStage) return;
-
-    if (masteryCelebrationTimer.current) {
-      window.clearTimeout(masteryCelebrationTimer.current);
-    }
-    setMasteryCelebration({
-      level: progress.activeLevel,
-      threshold: earnedStage.threshold,
-    });
-    masteryCelebrationTimer.current = window.setTimeout(
-      () => setMasteryCelebration(null),
-      1_600,
-    );
-
-    const levelUnlockWillHandleHaptic =
-      earnedStage.threshold === LEVEL_UNLOCK_STREAK &&
-      progress.activeLevel < LEVELS.length &&
-      progress.highestLevel < progress.activeLevel + 1;
-    if (!levelUnlockWillHandleHaptic) {
-      flowerGrowthHaptic(earnedStage.threshold);
-    }
-    trackEvent("Flower Stage Earned", {
-      level: progress.activeLevel,
-      stage: earnedStage.name,
-      streak: earnedStage.threshold,
-    });
-  }
-
-  function announceLevelUnlockIfEarned(correct: boolean) {
-    const nextLevel = progress.activeLevel + 1;
-    if (
-      !correct ||
-      progress.activeLevel >= LEVELS.length ||
-      activeMastery.currentStreak !== LEVEL_UNLOCK_STREAK - 1 ||
-      progress.highestLevel >= nextLevel
-    ) {
-      return;
-    }
-    levelUnlockHaptic();
-    setLevelUnlockNotice(nextLevel);
-    trackEvent("Level Unlocked", { level: nextLevel });
   }
 
   async function installApp() {
@@ -661,8 +806,6 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
-    announceMasteryIfEarned(correct);
-    announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -675,6 +818,8 @@ export default function App() {
         correct: 0,
         wrong: 0,
         transliterationCorrect: 0,
+        meaningCorrect: 0,
+        lastAnswerCorrect: true,
         interval: 0,
         dueAt: 0,
         avgMs: 0,
@@ -688,12 +833,6 @@ export default function App() {
       const previousMastery = levelMastery(current);
       const streak = correct ? previousMastery.currentStreak + 1 : 0;
       const bestAtLevel = Math.max(previousMastery.bestStreak, streak);
-      const highestLevel =
-        correct &&
-        previousMastery.currentStreak === LEVEL_UNLOCK_STREAK - 1 &&
-        current.activeLevel < LEVELS.length
-          ? Math.max(current.highestLevel, current.activeLevel + 1)
-          : current.highestLevel;
       return {
         ...current,
         words: {
@@ -703,10 +842,17 @@ export default function App() {
             correct: previous.correct + (correct ? 1 : 0),
             wrong: previous.wrong + (correct ? 0 : 1),
             transliterationCorrect:
-              question.mode === "meaning" && !correct
+              !correct
                 ? 0
                 : (previous.transliterationCorrect ?? 0) +
                   (correct && question.mode === "transliteration" ? 1 : 0),
+            meaningCorrect:
+              question.mode === "meaning"
+                ? correct
+                  ? (previous.meaningCorrect ?? 0) + 1
+                  : 0
+                : (previous.meaningCorrect ?? 0),
+            lastAnswerCorrect: correct,
             interval,
             dueAt: Date.now() + interval * 86_400_000,
             avgMs: previous.seen
@@ -722,11 +868,11 @@ export default function App() {
         levelMastery: {
           ...current.levelMastery,
           [current.activeLevel]: {
+            ...previousMastery,
             currentStreak: streak,
             bestStreak: bestAtLevel,
           },
         },
-        highestLevel,
         dayStreak,
         lastStudyDay: today,
       };
@@ -749,8 +895,6 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
-    announceMasteryIfEarned(correct);
-    announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -762,6 +906,10 @@ export default function App() {
         seen: 0,
         correct: 0,
         wrong: 0,
+        contextSeen: 0,
+        isolationCorrect: 0,
+        contextCorrect: 0,
+        lastAnswerCorrect: true,
       };
       const gap = current.lastStudyDay ? dayDifference(current.lastStudyDay, today) : 0;
       const dayStreak =
@@ -769,12 +917,6 @@ export default function App() {
       const previousMastery = levelMastery(current);
       const streak = correct ? previousMastery.currentStreak + 1 : 0;
       const bestAtLevel = Math.max(previousMastery.bestStreak, streak);
-      const highestLevel =
-        correct &&
-        previousMastery.currentStreak === LEVEL_UNLOCK_STREAK - 1 &&
-        current.activeLevel < LEVELS.length
-          ? Math.max(current.highestLevel, current.activeLevel + 1)
-          : current.highestLevel;
       return {
         ...current,
         patternStats: {
@@ -785,6 +927,13 @@ export default function App() {
             wrong: previous.wrong + (correct ? 0 : 1),
             contextSeen:
               (previous.contextSeen ?? 0) + (patternExercise.stage === "context" ? 1 : 0),
+            isolationCorrect:
+              (previous.isolationCorrect ?? 0) +
+              (correct && patternExercise.stage === "isolation" ? 1 : 0),
+            contextCorrect:
+              (previous.contextCorrect ?? 0) +
+              (correct && patternExercise.stage === "context" ? 1 : 0),
+            lastAnswerCorrect: correct,
           },
         },
         totalCorrect: current.totalCorrect + (correct ? 1 : 0),
@@ -795,11 +944,11 @@ export default function App() {
         levelMastery: {
           ...current.levelMastery,
           [current.activeLevel]: {
+            ...previousMastery,
             currentStreak: streak,
             bestStreak: bestAtLevel,
           },
         },
-        highestLevel,
         dayStreak,
         lastStudyDay: today,
       };
@@ -1073,8 +1222,8 @@ export default function App() {
             <div className="level-unlock-growth">
               <strong>Your flower is now a bud.</strong>
               <span>
-                Stay on Level {progress.activeLevel} to keep growing it: five more correct answers
-                open the flower, and ten more make a bouquet.
+                Stay on Level {progress.activeLevel} to keep growing it: strengthen more words for
+                a Bloom, then master every word and pattern for a Bouquet.
               </span>
             </div>
             <div className="level-unlock-actions">
@@ -1162,33 +1311,78 @@ export default function App() {
                   </strong>
                   <span>
                     {upcomingMasteryStage
-                      ? `${masteryRemaining} more in a row to ${upcomingMasteryStage.nextCopy}${
+                      ? `${upcomingMasteryStage.name}: ${
+                          nextGoalParts.join(" · ") || "ready to grow"
+                        }${
                           upcomingMasteryStage.threshold === LEVEL_UNLOCK_STREAK &&
                           progress.activeLevel < LEVELS.length
                             ? ` and unlock Level ${progress.activeLevel + 1}`
                             : ""
                         }`
-                      : "Your bouquet is fully grown. Keep your streak going."}
+                      : `Your bouquet is fully grown. Keep your current streak going.`}
                   </span>
                 </div>
-                <div
-                  className="graduation-track"
-                  aria-label={
-                    upcomingMasteryStage
-                      ? `${masteryProgress} of ${masteryTarget} correct answers toward ${upcomingMasteryStage.name} mastery`
-                      : `Current answer streak: ${activeMastery.currentStreak}`
-                  }
-                >
-                  <span
-                    style={{
-                      width: `${Math.min(100, (masteryProgress / masteryTarget) * 100)}%`,
-                    }}
-                  />
-                  <b>
-                    {upcomingMasteryStage
-                      ? `${masteryProgress} / ${masteryTarget} correct`
-                      : `Current streak: ${activeMastery.currentStreak}`}
-                  </b>
+                <div className="mastery-goals">
+                  <div
+                    className="graduation-track streak-goal"
+                    aria-label={
+                      upcomingMasteryStage
+                        ? `Best streak ${activeMastery.bestStreak}; ${masteryTarget} required; current streak ${activeMastery.currentStreak}`
+                        : `Current answer streak ${activeMastery.currentStreak}; personal best ${activeMastery.bestStreak}`
+                    }
+                  >
+                    <span
+                      style={{
+                        width: `${Math.min(100, (masteryProgress / masteryTarget) * 100)}%`,
+                      }}
+                    />
+                    <b>
+                      {upcomingMasteryStage
+                        ? activeMastery.bestStreak >= masteryTarget
+                          ? `Streak goal ${masteryTarget} reached · now ${activeMastery.currentStreak}`
+                          : `Best streak ${masteryProgress}/${masteryTarget} · now ${activeMastery.currentStreak}`
+                        : `Current ${activeMastery.currentStreak} · best ${activeMastery.bestStreak}`}
+                    </b>
+                  </div>
+                  {upcomingMasteryStage && (
+                    <div
+                      className="graduation-track word-goal"
+                      aria-label={`${activeEvidence.masteredWords} of ${requiredMasteredWords} words mastered toward ${upcomingMasteryStage.name}`}
+                    >
+                      <span
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (activeEvidence.masteredWords / Math.max(1, requiredMasteredWords)) * 100,
+                          )}%`,
+                        }}
+                      />
+                      <b>Words mastered {activeEvidence.masteredWords}/{requiredMasteredWords}</b>
+                    </div>
+                  )}
+                  {upcomingMasteryStage &&
+                    upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
+                    activeEvidence.patternCount > 0 && (
+                      <div
+                        className="graduation-track pattern-goal"
+                        aria-label={`${activeEvidence.masteredPatterns} of ${activeEvidence.patternCount} patterns mastered toward Bouquet`}
+                      >
+                        <span
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              (activeEvidence.masteredPatterns /
+                                Math.max(1, activeEvidence.patternCount)) *
+                                100,
+                            )}%`,
+                          }}
+                        />
+                        <b>
+                          Patterns mastered {activeEvidence.masteredPatterns}/
+                          {activeEvidence.patternCount}
+                        </b>
+                      </div>
+                    )}
                 </div>
               </div>
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
@@ -1375,7 +1569,7 @@ export default function App() {
               <div className="stat-card accent"><span>Accuracy</span><strong>{accuracy}%</strong><small>{progress.totalAnswers} answers</small></div>
               <div className="stat-card"><span>Average speed</span><strong>{averageSeconds}<em>s</em></strong><small>per answer</small></div>
               <div className="stat-card"><span>Best streak</span><strong>{progress.bestStreak}</strong><small>correct in a row</small></div>
-              <div className="stat-card"><span>Words growing</span><strong>{mastered}</strong><small>at 80%+ accuracy</small></div>
+              <div className="stat-card"><span>Words mastered</span><strong>{mastered}</strong><small>sound and meaning confirmed</small></div>
             </div>
             <div className="section-card">
               <div className="section-heading">
@@ -1388,7 +1582,23 @@ export default function App() {
                   const locked = number > unlockedLevel;
                   const active = number === progress.activeLevel;
                   const mastery = levelMastery(progress, number);
-                  const stage = masteryStage(mastery.bestStreak);
+                  const stage = masteryStage(mastery.earnedThreshold);
+                  const evidence = levelEvidence(progress, number);
+                  const nextStage = nextMasteryStage(mastery.earnedThreshold);
+                  const nextWordTarget = nextStage
+                    ? requiredWordsForStage(evidence.wordCount, nextStage.coverage)
+                    : evidence.wordCount;
+                  const levelProgressLabel = stage
+                    ? nextStage
+                      ? nextStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
+                        evidence.masteredWords >= nextWordTarget &&
+                        evidence.patternCount > 0
+                        ? `${stage.name} · ${evidence.masteredPatterns}/${evidence.patternCount} patterns to Bouquet`
+                        : `${stage.name} · ${evidence.masteredWords}/${nextWordTarget} words to ${nextStage.name}`
+                      : `${stage.name} · complete`
+                    : `${evidence.masteredWords}/${nextWordTarget} words to ${
+                        nextStage?.name ?? "Sprout"
+                      }`;
                   return (
                     <button
                       key={level.title}
@@ -1420,15 +1630,13 @@ export default function App() {
                             alt=""
                             aria-hidden="true"
                           />
-                          <small>
-                            {stage ? `${stage.name} · best ${mastery.bestStreak}` : "No flower yet"}
-                          </small>
+                          <small>{levelProgressLabel}</small>
                         </span>
                       )}
                       <span>
                         {locked
                           ? number === progress.activeLevel + 1
-                            ? `${streakToGraduate} streak left`
+                            ? "Earn Bud"
                             : "Locked"
                           : active
                             ? "Current"
@@ -1442,10 +1650,17 @@ export default function App() {
                 {MASTERY_STAGES.map((stage) => (
                   <span key={stage.name}>
                     <img src={stage.image} alt="" aria-hidden="true" />
-                    <small><b>{stage.threshold}</b> {stage.name}</small>
+                    <small>
+                      <b>{stage.threshold} streak</b>
+                      <br />
+                      {Math.round(stage.coverage * 100)}% · {stage.name}
+                    </small>
                   </span>
                 ))}
-                <p>Your flower never shrinks. The bud at 15 unlocks the next level.</p>
+                <p>
+                  Each flower needs both the best streak shown and mastered level words. Bouquet
+                  also requires every level pattern. Earned flowers never shrink.
+                </p>
               </div>
             </div>
             <div className="section-card pattern-library">
