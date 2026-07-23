@@ -281,8 +281,10 @@ export default function App() {
             correct: previous.correct + (correct ? 1 : 0),
             wrong: previous.wrong + (correct ? 0 : 1),
             transliterationCorrect:
-              (previous.transliterationCorrect ?? 0) +
-              (correct && question.mode === "transliteration" ? 1 : 0),
+              question.mode === "meaning" && !correct
+                ? 0
+                : (previous.transliterationCorrect ?? 0) +
+                  (correct && question.mode === "transliteration" ? 1 : 0),
             interval,
             dueAt: Date.now() + interval * 86_400_000,
             avgMs: previous.seen
