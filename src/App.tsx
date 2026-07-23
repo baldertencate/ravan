@@ -30,6 +30,7 @@ type PatternProgress = {
   seen: number;
   correct: number;
   wrong: number;
+  contextSeen?: number;
 };
 type LevelMastery = {
   currentStreak: number;
@@ -311,13 +312,20 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   return { word: target, options: shuffle([target, ...distractors]), mode };
 }
 
-function choosePatternExercise(progress: Progress): PatternExercise {
-  const available = PATTERNS.filter((pattern) => pattern.level <= progress.activeLevel);
+function choosePatternExercise(progress: Progress, excludePatternId?: string): PatternExercise {
+  const fullPool = PATTERNS.filter((pattern) => pattern.level <= progress.activeLevel);
+  const available =
+    excludePatternId && fullPool.length > 1
+      ? fullPool.filter((pattern) => pattern.id !== excludePatternId)
+      : fullPool;
   const weighted = available.map((pattern) => {
     const stat = progress.patternStats[pattern.id];
+    const contextPenalty = 1 + (stat?.contextSeen ?? 0) * 0.75;
     return {
       pattern,
-      weight: stat ? 4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6 : 10,
+      weight: stat
+        ? (4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6) / contextPenalty
+        : 10,
     };
   });
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -329,7 +337,7 @@ function choosePatternExercise(progress: Progress): PatternExercise {
     })?.pattern ?? available[0];
   const stat = progress.patternStats[pattern.id];
   const stage: "isolation" | "context" =
-    stat && stat.correct >= 1 ? "context" : "isolation";
+    stat && stat.seen >= 1 ? "context" : "isolation";
   const example = pattern.examples[(stat?.seen ?? 0) % pattern.examples.length];
   const distractors = shuffle(PATTERNS.filter((item) => item.id !== pattern.id)).slice(0, 3);
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
@@ -775,6 +783,8 @@ export default function App() {
             seen: previous.seen + 1,
             correct: previous.correct + (correct ? 1 : 0),
             wrong: previous.wrong + (correct ? 0 : 1),
+            contextSeen:
+              (previous.contextSeen ?? 0) + (patternExercise.stage === "context" ? 1 : 0),
           },
         },
         totalCorrect: current.totalCorrect + (correct ? 1 : 0),
@@ -800,7 +810,7 @@ export default function App() {
     const nextProgress = { ...progress };
     const patternNext = progress.activeLevel >= 2 && (session.answers + 1) % 3 === 0;
     if (patternNext) {
-      setPatternExercise(choosePatternExercise(nextProgress));
+      setPatternExercise(choosePatternExercise(nextProgress, patternExercise?.pattern.id));
       setExerciseKind("pattern");
     } else {
       setQuestion(chooseQuestion(nextProgress, question.word.id));
