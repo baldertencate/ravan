@@ -214,7 +214,7 @@ function wordIsMastered(stat?: WordProgress) {
   return Boolean(
     stat &&
       stat.transliterationCorrect >= 1 &&
-      (stat.meaningCorrect ?? 0) >= 2 &&
+      (stat.meaningCorrect ?? 0) >= 1 &&
       stat.lastAnswerCorrect !== false,
   );
 }
@@ -397,7 +397,7 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const globalFade = Math.min(0.88, progress.totalCorrect / 140);
   const meaningChance = Math.max(0.22, Math.min(0.95, 0.25 + mastery * 0.5 + globalFade));
   const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
-  const needsMeaningEvidence = (stat?.meaningCorrect ?? 0) < 2;
+  const needsMeaningEvidence = (stat?.meaningCorrect ?? 0) < 1;
   const mode: Mode = !hasCorrectTransliteration
     ? "transliteration"
     : needsMeaningEvidence || Math.random() < meaningChance
@@ -847,11 +847,11 @@ export default function App() {
                 : (previous.transliterationCorrect ?? 0) +
                   (correct && question.mode === "transliteration" ? 1 : 0),
             meaningCorrect:
-              question.mode === "meaning"
-                ? correct
+              !correct
+                ? 0
+                : question.mode === "meaning"
                   ? (previous.meaningCorrect ?? 0) + 1
-                  : 0
-                : (previous.meaningCorrect ?? 0),
+                  : (previous.meaningCorrect ?? 0),
             lastAnswerCorrect: correct,
             interval,
             dueAt: Date.now() + interval * 86_400_000,
