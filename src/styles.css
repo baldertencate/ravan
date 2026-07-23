@@ -643,18 +643,48 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   min-height: 58px;
   display: grid; grid-template-columns: 34px 54px; align-items: center; gap: 3px;
 }
-.current-level > div { display: flex; flex-direction: column; justify-content: center; }
+.current-level > div:first-child { display: flex; flex-direction: column; justify-content: center; }
 .current-level span { color: var(--muted); font-size: 8px; letter-spacing: .14em; font-weight: 800; }
 .current-level strong {
   font-family: Georgia, serif; color: var(--green-dark); font-size: 25px;
   font-weight: 500; line-height: 1;
 }
+.mastery-flower {
+  width: 54px;
+  height: 54px;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.mastery-flower::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1.5px solid rgba(229, 160, 65, .72);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
 .current-level img {
-  width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 4px 5px rgba(54, 70, 56, .11));
+  width: 54px; height: 54px; position: relative; z-index: 1;
+  object-fit: contain; filter: drop-shadow(0 4px 5px rgba(54, 70, 56, .11));
 }
 .current-level img.not-earned {
   opacity: .27; filter: grayscale(1); transform: scale(.82);
 }
+.mastery-flower i,
+.level-unlock-flower-wrap i {
+  position: absolute;
+  z-index: 2;
+  color: #e5a041;
+  font-size: 12px;
+  font-style: normal;
+  opacity: 0;
+  pointer-events: none;
+}
+.mastery-flower i:nth-of-type(1) { top: -3px; right: 1px; }
+.mastery-flower i:nth-of-type(2) { top: 14px; left: -4px; font-size: 9px; }
+.mastery-flower i:nth-of-type(3) { right: -4px; bottom: 4px; font-size: 8px; }
 .graduation-copy { min-width: 0; display: grid; gap: 7px; }
 .graduation-copy > div:first-child { display: flex; flex-direction: column; gap: 2px; }
 .graduation-copy strong { font-size: 12px; }
@@ -699,14 +729,22 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   box-shadow: 0 28px 80px rgba(19, 33, 24, .28);
   text-align: center;
 }
-.level-unlock-flower {
+.level-unlock-flower-wrap {
   width: 106px;
   height: 106px;
   margin: -6px auto 8px;
+  position: relative;
+}
+.level-unlock-flower {
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
   filter: drop-shadow(0 10px 12px rgba(54, 70, 56, .14));
 }
+.level-unlock-flower-wrap i:nth-of-type(1) { top: 7px; right: 7px; font-size: 17px; }
+.level-unlock-flower-wrap i:nth-of-type(2) { top: 25px; left: 3px; font-size: 11px; }
+.level-unlock-flower-wrap i:nth-of-type(3) { right: 0; bottom: 15px; font-size: 9px; }
 .level-unlock-splash h2 {
   margin: 8px 0 4px;
   color: var(--green-dark);
@@ -1226,6 +1264,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     height: 46px;
   }
 
+  .mastery-flower {
+    width: 46px;
+    height: 46px;
+  }
+
   .graduation-copy {
     gap: 4px;
   }
@@ -1337,7 +1380,46 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
 @media (prefers-reduced-motion: no-preference) {
   .word-card { animation: rise .35s ease-out; }
+  .mastery-flower.celebrating img,
+  .level-unlock-flower-wrap img {
+    animation: flower-pop 900ms cubic-bezier(.2, .8, .25, 1);
+  }
+  .mastery-flower.celebrating::after {
+    animation: flower-ring 900ms ease-out;
+  }
+  .graduation-card.flower-celebrating {
+    animation: milestone-glow 1.35s ease-out;
+  }
+  .mastery-flower.celebrating i,
+  .level-unlock-flower-wrap i {
+    animation: flower-sparkle 1.15s ease-out both;
+  }
+  .mastery-flower.celebrating i:nth-of-type(2),
+  .level-unlock-flower-wrap i:nth-of-type(2) { animation-delay: 100ms; }
+  .mastery-flower.celebrating i:nth-of-type(3),
+  .level-unlock-flower-wrap i:nth-of-type(3) { animation-delay: 190ms; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  @keyframes flower-pop {
+    0% { transform: scale(.72); }
+    45% { transform: scale(1.13) rotate(2deg); }
+    72% { transform: scale(.96) rotate(-1deg); }
+    100% { transform: scale(1); }
+  }
+  @keyframes flower-ring {
+    0% { opacity: .9; transform: scale(.55); }
+    100% { opacity: 0; transform: scale(1.85); }
+  }
+  @keyframes milestone-glow {
+    0% { border-color: rgba(229, 160, 65, .9); box-shadow: 0 0 0 0 rgba(229, 160, 65, .36); }
+    45% { border-color: rgba(229, 160, 65, .75); box-shadow: 0 0 0 7px rgba(229, 160, 65, .12); }
+    100% { box-shadow: 0 0 0 13px rgba(229, 160, 65, 0); }
+  }
+  @keyframes flower-sparkle {
+    0% { opacity: 0; transform: translateY(5px) scale(.35) rotate(-20deg); }
+    28% { opacity: 1; }
+    70% { opacity: .95; }
+    100% { opacity: 0; transform: translateY(-9px) scale(1.25) rotate(12deg); }
+  }
 }
 
 @media (display-mode: standalone) and (max-width: 600px) {

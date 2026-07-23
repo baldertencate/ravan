@@ -35,6 +35,10 @@ type LevelMastery = {
   currentStreak: number;
   bestStreak: number;
 };
+type MasteryCelebration = {
+  level: number;
+  threshold: number;
+};
 type Progress = {
   words: Record<string, WordProgress>;
   totalCorrect: number;
@@ -366,12 +370,22 @@ export default function App() {
   const [shareStatus, setShareStatus] = useState("");
   const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [masteryCelebration, setMasteryCelebration] = useState<MasteryCelebration | null>(null);
   const startedAt = useRef(Date.now());
+  const masteryCelebrationTimer = useRef<number | null>(null);
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
   useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
   useEffect(() => localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder)), [reminder]);
   useEffect(() => localStorage.setItem(HAPTICS_KEY, String(haptics)), [haptics]);
+  useEffect(
+    () => () => {
+      if (masteryCelebrationTimer.current) {
+        window.clearTimeout(masteryCelebrationTimer.current);
+      }
+    },
+    [],
+  );
   useEffect(() => {
     trackSessionEvent("ravan-app-opened", "App Opened");
     if (showOnboarding) trackSessionEvent("ravan-onboarding-started", "Onboarding Started");
@@ -451,6 +465,47 @@ export default function App() {
   function levelUnlockHaptic() {
     if (!haptics || !("vibrate" in navigator)) return;
     navigator.vibrate(180);
+  }
+
+  function flowerGrowthHaptic(threshold: number) {
+    if (!haptics || !("vibrate" in navigator)) return;
+    navigator.vibrate(threshold === 25 ? [35, 35, 75] : [30, 30, 50]);
+  }
+
+  function announceMasteryIfEarned(correct: boolean) {
+    if (!correct) return;
+    const nextStreak = activeMastery.currentStreak + 1;
+    const earnedStage = MASTERY_STAGES.find(
+      (stage) =>
+        stage.threshold === nextStreak &&
+        activeMastery.bestStreak < stage.threshold,
+    );
+    if (!earnedStage) return;
+
+    if (masteryCelebrationTimer.current) {
+      window.clearTimeout(masteryCelebrationTimer.current);
+    }
+    setMasteryCelebration({
+      level: progress.activeLevel,
+      threshold: earnedStage.threshold,
+    });
+    masteryCelebrationTimer.current = window.setTimeout(
+      () => setMasteryCelebration(null),
+      1_600,
+    );
+
+    const levelUnlockWillHandleHaptic =
+      earnedStage.threshold === LEVEL_UNLOCK_STREAK &&
+      progress.activeLevel < LEVELS.length &&
+      progress.highestLevel < progress.activeLevel + 1;
+    if (!levelUnlockWillHandleHaptic) {
+      flowerGrowthHaptic(earnedStage.threshold);
+    }
+    trackEvent("Flower Stage Earned", {
+      level: progress.activeLevel,
+      stage: earnedStage.name,
+      streak: earnedStage.threshold,
+    });
   }
 
   function announceLevelUnlockIfEarned(correct: boolean) {
@@ -598,6 +653,7 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
+    announceMasteryIfEarned(correct);
     announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
@@ -685,6 +741,7 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
+    announceMasteryIfEarned(correct);
     announceLevelUnlockIfEarned(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
@@ -988,12 +1045,16 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="level-unlock-title"
           >
-            <img
-              className="level-unlock-flower"
-              src={MASTERY_STAGES[1].image}
-              alt=""
-              aria-hidden="true"
-            />
+            <div className="level-unlock-flower-wrap" aria-hidden="true">
+              <img
+                className="level-unlock-flower"
+                src={MASTERY_STAGES[1].image}
+                alt=""
+              />
+              <i>✦</i>
+              <i>✦</i>
+              <i>✦</i>
+            </div>
             <span className="eyebrow">A NEW READING STEP</span>
             <h2 id="level-unlock-title">
               Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
@@ -1057,20 +1118,33 @@ export default function App() {
               <span style={{ width: `${Math.min(100, session.answers * 10)}%` }} />
             </div>
 
-            <div className={`graduation-card ${canGraduate ? "ready" : ""}`}>
+            <div
+              className={`graduation-card ${canGraduate ? "ready" : ""} ${
+                masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
+              }`}
+            >
               <div className="current-level">
                 <div>
                   <span>LEVEL</span>
                   <strong>{progress.activeLevel}</strong>
                 </div>
-                <img
-                  className={earnedMasteryStage ? "" : "not-earned"}
-                  src={earnedMasteryStage?.image ?? MASTERY_STAGES[0].image}
-                  alt={earnedMasteryStage ? `${earnedMasteryStage.name} mastery` : ""}
-                />
+                <div
+                  className={`mastery-flower ${
+                    masteryCelebration?.level === progress.activeLevel ? "celebrating" : ""
+                  }`}
+                >
+                  <img
+                    className={earnedMasteryStage ? "" : "not-earned"}
+                    src={earnedMasteryStage?.image ?? MASTERY_STAGES[0].image}
+                    alt={earnedMasteryStage ? `${earnedMasteryStage.name} mastery` : ""}
+                  />
+                  <i aria-hidden="true">✦</i>
+                  <i aria-hidden="true">✦</i>
+                  <i aria-hidden="true">✦</i>
+                </div>
               </div>
               <div className="graduation-copy">
-                <div>
+                <div aria-live="polite">
                   <strong>
                     {earnedMasteryStage
                       ? `${earnedMasteryStage.name} earned`
@@ -1512,7 +1586,7 @@ export default function App() {
               </div>
               <div className="preference-list">
                 <div>
-                  <span><strong>Gentle haptics</strong><small>A short tap for a wrong answer and a longer tap when a new level unlocks.</small></span>
+                  <span><strong>Gentle haptics</strong><small>A short tap for a wrong answer, a gentle pulse when a flower grows, and a longer tap when a new level unlocks.</small></span>
                   <button
                     type="button"
                     className="vowel-toggle settings-toggle"
