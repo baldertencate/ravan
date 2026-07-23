@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
+import vowelData from "./data/vowels.json";
 
 type Mode = "meaning" | "transliteration";
 type Tab = "learn" | "journey" | "words";
@@ -11,6 +12,7 @@ type Word = {
   level: number;
   rank: number;
   letters: string[];
+  vowelled: string;
 };
 type WordProgress = {
   seen: number;
@@ -34,8 +36,13 @@ type Progress = {
 };
 type Question = { word: Word; options: Word[]; mode: Mode };
 
-const WORDS = wordsData as Word[];
+const VOWELLED = vowelData as Record<string, string>;
+const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
+  ...word,
+  vowelled: VOWELLED[word.id] ?? word.persian,
+}));
 const STORAGE_KEY = "ravan-progress-v1";
+const VOWEL_KEY = "ravan-show-vowels-v1";
 const LEVELS = [
   { title: "First shapes", copy: "Short, frequent words · ا ب د م ن" },
   { title: "Joining letters", copy: "Everyday connectors and core verbs" },
@@ -137,9 +144,13 @@ export default function App() {
   const [answeredCorrectly, setAnsweredCorrectly] = useState<boolean | null>(null);
   const [session, setSession] = useState({ correct: 0, answers: 0 });
   const [showModeHelp, setShowModeHelp] = useState(false);
+  const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
+  useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
+
+  const displayWord = (word: Word) => showVowels ? word.vowelled : word.persian;
 
   const unlockedLevel = progress.highestLevel;
   const graduationTarget = 15;
@@ -280,8 +291,20 @@ export default function App() {
                 <span className="eyebrow">TODAY’S PRACTICE</span>
                 <h1>Read the word</h1>
               </div>
-              <div className="session-score">
-                <strong>{session.correct}</strong><span>/ {session.answers || 0}</span>
+              <div className="session-tools">
+                <div className="session-score">
+                  <strong>{session.correct}</strong><span>/ {session.answers || 0}</span>
+                </div>
+                <button
+                  type="button"
+                  className="vowel-toggle"
+                  role="switch"
+                  aria-checked={showVowels}
+                  onClick={() => setShowVowels((visible) => !visible)}
+                >
+                  <span className="toggle-track"><span /></span>
+                  Vowel marks
+                </button>
               </div>
             </div>
 
@@ -350,7 +373,7 @@ export default function App() {
                   )}
                 </div>
               )}
-              <div className="persian-word" lang="fa" dir="rtl">{question.word.persian}</div>
+              <div className="persian-word" lang="fa" dir="rtl">{displayWord(question.word)}</div>
               <p className="prompt">
                 Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
               </p>
@@ -386,7 +409,7 @@ export default function App() {
                 <div>
                   <strong>{answeredCorrectly ? "That’s it." : "Not quite — keep this one close."}</strong>
                   <span>
-                    <b lang="fa" dir="rtl">{question.word.persian}</b>
+                    <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
                     {" · "}{question.word.transliteration} · {question.word.meaning}
                   </span>
                 </div>
@@ -486,7 +509,7 @@ export default function App() {
                 return (
                   <div className="word-row" key={word.id}>
                     <div className="mini-ring" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}><span>{score}</span></div>
-                    <div><strong lang="fa" dir="rtl">{word.persian}</strong><span>{word.meaning}</span></div>
+                    <div><strong lang="fa" dir="rtl">{displayWord(word)}</strong><span>{word.meaning}</span></div>
                     <div><span>{stat.seen} reviews</span><small>{stat.dueAt <= Date.now() ? "Due now" : `in ${Math.max(1, Math.ceil((stat.dueAt - Date.now()) / 86_400_000))}d`}</small></div>
                   </div>
                 );
