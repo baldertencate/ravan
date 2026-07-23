@@ -49,7 +49,8 @@ button:focus-visible { outline: 3px solid #e69a6e; outline-offset: 3px; }
 .header-stats { display: flex; gap: 8px; align-items: center; }
 .streak-pill, .level-pill { padding: 8px 11px; border-radius: 99px; font-size: 12px; font-weight: 700; }
 .streak-pill { background: #f8dfca; color: #9d4b2b; }
-.level-pill { background: var(--sage); color: var(--green-dark); }
+.level-pill { border: 0; background: var(--sage); color: var(--green-dark); cursor: pointer; }
+.level-pill:hover { background: #cedfcb; }
 
 main { padding: 30px 22px 10px; }
 .session-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
@@ -82,7 +83,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .progress-track { height: 4px; background: #dedad0; border-radius: 99px; overflow: hidden; margin-bottom: 22px; }
 .progress-track span { height: 100%; display: block; background: var(--orange); border-radius: inherit; transition: width .35s ease; }
 .graduation-card {
-  display: grid; grid-template-columns: 46px 58px 1fr auto; align-items: center; gap: 12px;
+  display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 12px;
   background: #ece7dc; border: 1px solid #ded7ca; border-radius: 17px;
   padding: 10px 12px; margin: -8px 0 14px;
 }
@@ -90,14 +91,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   background: #dfeadd; border-color: #9bb59f;
   box-shadow: 0 10px 24px rgba(46, 93, 69, .09);
 }
-.streak-orb {
-  width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center;
-  justify-content: center; gap: 3px; background: #f8dfca; color: #a64e2c;
-}
-.streak-orb strong { font-size: 17px; }
-.graduation-card.ready .streak-orb { background: var(--green); color: white; }
 .current-level {
-  min-height: 44px; padding-left: 12px; border-left: 1px solid #d6cfc2;
+  min-height: 44px;
   display: flex; flex-direction: column; justify-content: center;
 }
 .current-level span { color: var(--muted); font-size: 8px; letter-spacing: .14em; font-weight: 800; }
@@ -109,9 +104,20 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .graduation-copy > div:first-child { display: flex; flex-direction: column; gap: 2px; }
 .graduation-copy strong { font-size: 12px; }
 .graduation-copy span { color: var(--muted); font-size: 9px; }
-.graduation-track { height: 4px; background: rgba(46, 93, 69, .13); border-radius: 99px; overflow: hidden; }
-.graduation-track span { height: 100%; display: block; border-radius: inherit; background: var(--orange); transition: width .25s ease; }
+.graduation-track {
+  height: 19px; position: relative; background: rgba(46, 93, 69, .13);
+  border-radius: 99px; overflow: hidden;
+}
+.graduation-track span {
+  height: 100%; display: block; border-radius: inherit; background: var(--orange);
+  transition: width .25s ease;
+}
+.graduation-track b {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #33493b; font-size: 8px; letter-spacing: .04em;
+}
 .graduation-card.ready .graduation-track span { background: var(--green); }
+.graduation-card.ready .graduation-track b { color: white; }
 .graduation-card > button {
   border: 0; border-radius: 11px; padding: 10px 12px; background: var(--green);
   color: white; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
@@ -249,7 +255,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .word-card { min-height: 220px; }
   .feedback { align-items: stretch; flex-direction: column; }
   .feedback button { width: 100%; }
-  .graduation-card { grid-template-columns: 42px 52px 1fr; gap: 9px; }
+  .graduation-card { grid-template-columns: 52px 1fr; gap: 9px; }
   .graduation-card > button { grid-column: 1 / -1; width: 100%; }
   .bridge-card { grid-template-columns: 74px 1fr; gap: 14px; padding: 16px; }
   .bridge-ring { width: 70px; height: 70px; }

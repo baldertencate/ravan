@@ -278,8 +278,15 @@ export default function App() {
           <span>Ravân</span>
         </button>
         <div className="header-stats">
-          <span className="streak-pill"><Icon name="flame" /> {progress.dayStreak}</span>
-          <span className="level-pill">Level {progress.activeLevel}</span>
+          <span className="streak-pill">{progress.dayStreak} day streak</span>
+          <button
+            type="button"
+            className="level-pill"
+            onClick={() => setTab("journey")}
+            aria-label={`Open Journey. Current level ${progress.activeLevel}`}
+          >
+            Level {progress.activeLevel} <span aria-hidden="true">→</span>
+          </button>
         </div>
       </header>
 
@@ -303,10 +310,6 @@ export default function App() {
             </div>
 
             <div className={`graduation-card ${canGraduate ? "ready" : ""}`}>
-              <div className="streak-orb">
-                <Icon name="flame" />
-                <strong>{progress.streak}</strong>
-              </div>
               <div className="current-level">
                 <span>LEVEL</span>
                 <strong>{progress.activeLevel}</strong>
@@ -331,6 +334,7 @@ export default function App() {
                 {progress.activeLevel < 5 && (
                   <div className="graduation-track" aria-label={`${progress.streak} of 15 correct answers`}>
                     <span style={{ width: `${Math.min(100, (progress.streak / graduationTarget) * 100)}%` }} />
+                    <b>{progress.streak} / {graduationTarget} correct</b>
                   </div>
                 )}
               </div>
