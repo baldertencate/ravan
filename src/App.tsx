@@ -335,9 +335,14 @@ export default function App() {
     );
   }
 
-  function hapticFeedback(correct: boolean) {
+  function wrongAnswerHaptic() {
     if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate(correct ? 18 : [28, 36, 28]);
+    navigator.vibrate(30);
+  }
+
+  function levelUnlockHaptic() {
+    if (!haptics || !("vibrate" in navigator)) return;
+    navigator.vibrate(180);
   }
 
   async function installApp() {
@@ -355,7 +360,7 @@ export default function App() {
     setInstallPrompt(null);
   }
 
-  function downloadReminder() {
+  function reminderTimes() {
     const [savedHour, savedMinute] = reminder.time.split(":").map(Number);
     const hour = Number.isFinite(savedHour) ? savedHour : 19;
     const minute = Number.isFinite(savedMinute) ? savedMinute : 0;
@@ -364,6 +369,29 @@ export default function App() {
     start.setHours(hour, minute, 0, 0);
     if (start.getTime() <= Date.now()) start.setDate(start.getDate() + 1);
     const end = new Date(start.getTime() + 15 * 60_000);
+    return { start, end };
+  }
+
+  function googleCalendarUrl() {
+    const { start, end } = reminderTimes();
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text: "Ravân — Farsi reading practice",
+      dates: `${calendarDate(start)}/${calendarDate(end)}`,
+      details: `A short Persian reading practice with Ravân.\n\n${APP_URL}`,
+      recur: `RRULE:FREQ=DAILY;INTERVAL=${reminder.interval}`,
+    });
+    if (timeZone) params.set("ctz", timeZone);
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  }
+
+  function openGoogleCalendar() {
+    trackEvent("Reminder Created", { interval_days: reminder.interval, calendar: "google" });
+  }
+
+  function downloadCalendarFile() {
+    const { start, end } = reminderTimes();
     const calendar = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
@@ -389,11 +417,10 @@ export default function App() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
-    trackEvent("Reminder Created", { interval_days: reminder.interval });
+    trackEvent("Reminder Created", { interval_days: reminder.interval, calendar: "ics" });
   }
 
   function finishOnboarding() {
-    if (reminder.enabled) downloadReminder();
     localStorage.setItem(ONBOARDING_KEY, "complete");
     setShowOnboarding(false);
     setOnboardingStep(0);
@@ -443,7 +470,7 @@ export default function App() {
         level: progress.activeLevel,
       });
     }
-    hapticFeedback(correct);
+    if (!correct) wrongAnswerHaptic();
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -519,7 +546,7 @@ export default function App() {
         level: progress.activeLevel,
       });
     }
-    hapticFeedback(correct);
+    if (!correct) wrongAnswerHaptic();
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -590,6 +617,7 @@ export default function App() {
     setShowModeHelp(false);
     setSession({ correct: 0, answers: 0 });
     startedAt.current = Date.now();
+    levelUnlockHaptic();
     trackEvent("Level Entered", { level: nextLevel, source: "unlock" });
   }
 
@@ -638,18 +666,19 @@ export default function App() {
           {onboardingStep === 0 && (
             <div className="onboarding-panel">
               <span className="eyebrow">PERSIAN SCRIPT, MADE APPROACHABLE</span>
-              <blockquote className="literary-quote onboarding-quote onboarding-quote-hero">
-                <h1 lang="fa" dir="rtl">قطره قطره جمع کن، دریا نگر</h1>
-                <footer>
-                  <span>“Gather it drop by drop; behold the sea.”</span>
-                  <cite>Shah Nematollah Vali</cite>
-                </footer>
-              </blockquote>
+              <h1>Learn to read Farsi, one word at a time.</h1>
               <p>Short, adaptive exercises train your eyes to recognize Persian words.</p>
               <div className="onboarding-benefits">
                 <span><b>01</b> Connect script to pronunciation, then to meaning</span>
                 <span><b>02</b> Recognize useful visual patterns</span>
               </div>
+              <blockquote className="literary-quote onboarding-quote">
+                <p lang="fa" dir="rtl">قطره قطره جمع کن، دریا نگر</p>
+                <footer>
+                  <span>“Gather it drop by drop; behold the sea.”</span>
+                  <cite>Shah Nematollah Vali</cite>
+                </footer>
+              </blockquote>
               <button className="primary-action" onClick={() => setOnboardingStep(1)}>
                 See how it works <span>→</span>
               </button>
@@ -661,6 +690,11 @@ export default function App() {
               <span className="eyebrow">A BRIDGE YOU GRADUALLY LEAVE BEHIND</span>
               <h1>Built to outgrow transliteration.</h1>
               <p>Ravân starts by connecting Persian spelling to sound, then shifts toward English meaning as each word becomes familiar.</p>
+              <div className="method-preview">
+                <div><span>در</span><strong>Sound bridge</strong><small>First match the script to <i>dar</i>.</small></div>
+                <div><span>می‌ـ</span><strong>Pattern checks</strong><small>Learn recurring chunks as visual units.</small></div>
+                <div><span>کتاب</span><strong>Read for meaning</strong><small>Eventually recognize “book” directly.</small></div>
+              </div>
               <blockquote className="literary-quote onboarding-quote onboarding-quote-compact">
                 <p lang="fa" dir="rtl">
                   صورتش دیدی ز معنی غافلی
@@ -672,11 +706,6 @@ export default function App() {
                   <cite>Rumi</cite>
                 </footer>
               </blockquote>
-              <div className="method-preview">
-                <div><span>در</span><strong>Sound bridge</strong><small>First match the script to <i>dar</i>.</small></div>
-                <div><span>می‌ـ</span><strong>Pattern checks</strong><small>Learn recurring chunks as visual units.</small></div>
-                <div><span>کتاب</span><strong>Read for meaning</strong><small>Eventually recognize “book” directly.</small></div>
-              </div>
               <button className="primary-action" onClick={() => setOnboardingStep(2)}>
                 Make it yours <span>→</span>
               </button>
@@ -713,28 +742,42 @@ export default function App() {
                 <span><strong>Create a practice reminder</strong><small>Uses your phone’s calendar so it works even when the web app is closed.</small></span>
               </label>
               {reminder.enabled && (
-                <div className="reminder-controls">
-                  <label>
-                    <span>Time</span>
-                    <input
-                      type="time"
-                      value={reminder.time}
-                      onChange={(event) => setReminder((current) => ({ ...current, time: event.target.value }))}
-                    />
-                  </label>
-                  <label>
-                    <span>Repeat</span>
-                    <select
-                      value={reminder.interval}
-                      onChange={(event) => setReminder((current) => ({ ...current, interval: Number(event.target.value) }))}
+                <>
+                  <div className="reminder-controls">
+                    <label>
+                      <span>Time</span>
+                      <input
+                        type="time"
+                        value={reminder.time}
+                        onChange={(event) => setReminder((current) => ({ ...current, time: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>Repeat</span>
+                      <select
+                        value={reminder.interval}
+                        onChange={(event) => setReminder((current) => ({ ...current, interval: Number(event.target.value) }))}
+                      >
+                        <option value={1}>Every day</option>
+                        <option value={2}>Every 2 days</option>
+                        <option value={3}>Every 3 days</option>
+                        <option value={7}>Every week</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="calendar-actions onboarding-calendar-actions">
+                    <a
+                      className="secondary-action calendar-action"
+                      href={googleCalendarUrl()}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={openGoogleCalendar}
                     >
-                      <option value={1}>Every day</option>
-                      <option value={2}>Every 2 days</option>
-                      <option value={3}>Every 3 days</option>
-                      <option value={7}>Every week</option>
-                    </select>
-                  </label>
-                </div>
+                      Open Google Calendar
+                    </a>
+                    <button className="calendar-file-action" onClick={downloadCalendarFile}>Other calendar</button>
+                  </div>
+                </>
               )}
               <button className="primary-action" onClick={finishOnboarding}>
                 Start practicing <span>→</span>
@@ -1105,6 +1148,8 @@ export default function App() {
           <section className="about-view">
             <div className="page-intro">
               <span className="eyebrow">ABOUT RAVÂN</span>
+              <h1>Helpful practice for learning to read Farsi.</h1>
+              <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
               <blockquote className="literary-quote about-literary-quote">
                 <p lang="fa" dir="rtl">
                   درخت تو گر بار دانش بگیرد
@@ -1116,8 +1161,6 @@ export default function App() {
                   <cite>Naser Khosrow</cite>
                 </footer>
               </blockquote>
-              <h1>Helpful practice for learning to read Farsi.</h1>
-              <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
             </div>
 
             <div className="about-actions">
@@ -1153,7 +1196,7 @@ export default function App() {
                   {reminder.enabled ? "On" : "Off"}
                 </button>
               </div>
-              <p>Static websites cannot reliably send scheduled notifications while closed. Ravân can instead add a recurring event to your phone’s calendar.</p>
+              <p>Ravân can open a recurring event in Google Calendar. If you use another calendar, you can download a calendar file instead.</p>
               {reminder.enabled && (
                 <>
                   <div className="reminder-controls">
@@ -1178,7 +1221,18 @@ export default function App() {
                       </select>
                     </label>
                   </div>
-                  <button className="secondary-action" onClick={downloadReminder}>Add reminder to calendar</button>
+                  <div className="calendar-actions">
+                    <a
+                      className="secondary-action calendar-action"
+                      href={googleCalendarUrl()}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={openGoogleCalendar}
+                    >
+                      Open Google Calendar
+                    </a>
+                    <button className="calendar-file-action" onClick={downloadCalendarFile}>Use another calendar</button>
+                  </div>
                 </>
               )}
             </div>
@@ -1189,7 +1243,7 @@ export default function App() {
               </div>
               <div className="preference-list">
                 <div>
-                  <span><strong>Gentle haptics</strong><small>Short feedback taps on supported Android phones.</small></span>
+                  <span><strong>Gentle haptics</strong><small>A short tap for a wrong answer and a longer tap when a new level unlocks.</small></span>
                   <button
                     type="button"
                     className="vowel-toggle settings-toggle"
@@ -1199,6 +1253,20 @@ export default function App() {
                   >
                     <span className="toggle-track"><span /></span>
                     {haptics ? "On" : "Off"}
+                  </button>
+                </div>
+                <div>
+                  <span><strong>Introduction</strong><small>Review how Ravân’s reading practice works.</small></span>
+                  <button
+                    type="button"
+                    className="quiet-setting-action"
+                    onClick={() => {
+                      setOnboardingStep(0);
+                      setShowOnboarding(true);
+                      trackEvent("Onboarding Replayed");
+                    }}
+                  >
+                    Replay
                   </button>
                 </div>
               </div>

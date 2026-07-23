@@ -196,24 +196,29 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 .literary-quote footer { display: flex; flex-direction: column; gap: 5px; }
 .literary-quote footer span { color: var(--muted); line-height: 1.55; }
 .literary-quote cite {
-  color: var(--orange);
+  color: #8b756a;
   font-size: 9px;
   font-style: normal;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-.landing-literary-quote { margin-top: 12px; }
-.landing-section-heading .landing-literary-quote h2 {
-  color: var(--green-dark);
-  font-family: "Noto Naskh Arabic", serif;
-  font-size: clamp(34px, 4.8vw, 54px);
-  font-weight: 600;
-  line-height: 1.45;
-  letter-spacing: 0;
+.landing-literary-quote {
+  max-width: 610px;
+  margin: 34px 0 0 auto;
+  padding-top: 18px;
+  border-top: 1px solid rgba(48, 67, 53, .13);
 }
-.landing-literary-quote footer { max-width: 590px; margin-top: 12px; }
-.landing-literary-quote footer span { font-family: Georgia, serif; font-size: 14px; font-style: italic; }
+.landing-literary-quote > p {
+  margin: 0;
+  color: #53675a;
+  font-family: "Noto Naskh Arabic", serif;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 600;
+  line-height: 1.55;
+}
+.landing-literary-quote footer { margin-top: 8px; }
+.landing-literary-quote footer span { font-family: Georgia, serif; font-size: 11px; font-style: italic; }
 .landing-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .landing-method-grid article {
   min-height: 390px;
@@ -324,27 +329,23 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 .onboarding-panel h1 { max-width: 460px; margin: 8px 0 12px; font-size: clamp(36px, 8vw, 52px); line-height: 1.05; }
 .onboarding-panel > p { color: var(--muted); font-size: 14px; line-height: 1.65; }
 .onboarding-quote {
-  padding: 15px 17px;
-  border: 1px solid #ded7ca;
-  border-radius: 17px;
-  background: #f3efe7;
+  margin: 5px 0 18px;
+  padding-top: 12px;
+  border-top: 1px solid #ded7ca;
 }
-.onboarding-quote-hero { margin: auto 0 18px; }
-.onboarding-panel .onboarding-quote h1,
 .onboarding-quote > p {
   margin: 0;
-  color: var(--green-dark);
+  color: #52665a;
   font-family: "Noto Naskh Arabic", serif;
   font-weight: 600;
   letter-spacing: 0;
 }
-.onboarding-panel .onboarding-quote h1 { max-width: none; font-size: clamp(32px, 8vw, 43px); line-height: 1.55; }
-.onboarding-quote > p { font-size: 27px; line-height: 1.6; }
-.onboarding-quote footer { margin-top: 8px; }
-.onboarding-quote footer span { font-family: Georgia, serif; font-size: 11px; font-style: italic; }
-.onboarding-quote-compact { margin: 15px 0 0; padding: 12px 14px; }
-.onboarding-quote-compact > p { font-size: 22px; line-height: 1.55; }
-.onboarding-quote-compact footer span { font-size: 10px; }
+.onboarding-quote > p { font-size: 21px; line-height: 1.55; }
+.onboarding-quote footer { margin-top: 6px; }
+.onboarding-quote footer span { font-family: Georgia, serif; font-size: 9px; font-style: italic; }
+.onboarding-quote-compact { margin: -12px 0 17px; padding-top: 10px; }
+.onboarding-quote-compact > p { font-size: 18px; line-height: 1.5; }
+.onboarding-quote-compact footer span { font-size: 9px; }
 .onboarding-word {
   margin: auto 0 8px;
   color: var(--green);
@@ -417,6 +418,26 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   border: 1px solid #d9d3c8; border-radius: 10px; background: #fffdf8; color: var(--ink);
   font: inherit; font-size: 11px;
 }
+.calendar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 11px; }
+.calendar-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green-dark);
+  font-size: 10px;
+  text-decoration: none;
+}
+.calendar-file-action, .quiet-setting-action {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.onboarding-calendar-actions { margin: -3px 0 15px; }
 
 .app-shell {
   min-height: 100vh;
@@ -675,22 +696,21 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .about-view { padding-bottom: 10px; }
 .about-view .page-intro { margin-bottom: 20px; }
 .about-literary-quote {
-  margin: 14px 0 22px;
-  padding: 18px;
-  border-radius: 19px;
-  background: var(--green);
-  color: white;
+  max-width: 470px;
+  margin: 24px 0 0 auto;
+  padding-top: 14px;
+  border-top: 1px solid #ddd8ce;
 }
 .about-literary-quote > p {
   margin: 0;
+  color: #52665a;
   font-family: "Noto Naskh Arabic", serif;
-  font-size: clamp(27px, 7vw, 34px);
+  font-size: clamp(21px, 6vw, 27px);
   font-weight: 600;
   line-height: 1.55;
 }
-.about-literary-quote footer { margin-top: 10px; }
-.about-literary-quote footer span { color: rgba(255,255,255,.74); font-family: Georgia, serif; font-size: 11px; font-style: italic; }
-.about-literary-quote cite { color: #f0b18f; }
+.about-literary-quote footer { margin-top: 7px; }
+.about-literary-quote footer span { font-family: Georgia, serif; font-size: 9px; font-style: italic; }
 .about-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .about-action {
   min-height: 58px; padding: 12px 14px; display: flex; align-items: center; justify-content: center;
@@ -719,6 +739,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .preference-list > div > span { display: flex; flex-direction: column; gap: 3px; }
 .preference-list strong { font-size: 11px; }
 .preference-list small { color: var(--muted); font-size: 9px; }
+.quiet-setting-action {
+  min-height: 34px;
+  padding: 6px 0 6px 12px;
+  color: var(--green);
+}
 
 .word-table { background: var(--paper); border: 1px solid #e4ded2; border-radius: 20px; overflow: hidden; }
 .word-row { display: grid; grid-template-columns: 38px 1fr auto; gap: 12px; align-items: center; padding: 13px 15px; border-bottom: 1px solid #ece7de; }
@@ -804,8 +829,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     min-height: 100svh; padding: 20px; border: 0; border-radius: 0; box-shadow: none;
   }
   .onboarding-panel h1 { font-size: 35px; }
-  .onboarding-panel .onboarding-quote h1 { font-size: 31px; }
-  .onboarding-quote-compact > p { font-size: 20px; }
   .onboarding-word { font-size: 82px; }
   .method-preview > div { min-height: 72px; grid-template-columns: 62px 1fr; }
   .method-preview > div > span { font-size: 31px; }

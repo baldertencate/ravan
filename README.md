@@ -14,8 +14,8 @@ installable practice app lives separately at `/app/`.
 - Tracks accuracy, answer speed, daily streaks, and per-word progress locally
 - Introduces the method through a focused first-run onboarding
 - Installs to a phone Home Screen with dedicated app icons and full-screen presentation
-- Offers recurring calendar reminders without requiring an account or notification server
-- Uses gentle answer haptics on supported Android devices
+- Opens a pre-filled recurring reminder in Google Calendar, with a calendar-file fallback
+- Uses a short wrong-answer haptic and a longer level-unlock haptic on supported Android devices
 - Includes an About and Settings area for installation, reminders, sharing, vowel marks, haptics, privacy, and replaying onboarding
 - Works offline after the first visit
 - Uses privacy-conscious, aggregate Plausible events for product improvement; answer content,
