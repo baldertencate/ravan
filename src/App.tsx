@@ -365,6 +365,7 @@ export default function App() {
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
@@ -422,7 +423,6 @@ export default function App() {
     const stat = progress.words[word.id];
     return stat && stat.dueAt <= Date.now();
   }).length;
-  const translitShare = Math.max(12, Math.round(75 - Math.min(63, progress.totalCorrect * 0.45)));
   const matchedPattern = PATTERNS.find(
     (pattern) =>
       pattern.level <= progress.activeLevel &&
@@ -570,6 +570,16 @@ export default function App() {
     } catch {
       setShareStatus("");
     }
+  }
+
+  function resetApp() {
+    [STORAGE_KEY, VOWEL_KEY, ONBOARDING_KEY, REMINDER_KEY, HAPTICS_KEY].forEach((key) =>
+      localStorage.removeItem(key),
+    );
+    ["ravan-app-opened", "ravan-onboarding-started", "ravan-practice-started"].forEach((key) =>
+      sessionStorage.removeItem(key),
+    );
+    window.location.reload();
   }
 
   function answer(option: Word) {
@@ -939,6 +949,37 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {showResetConfirm && (
+        <div className="level-unlock-backdrop">
+          <section
+            className="reset-confirm-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-confirm-title"
+            aria-describedby="reset-confirm-copy"
+          >
+            <span className="eyebrow">RESET RAVÂN</span>
+            <h2 id="reset-confirm-title">Start again?</h2>
+            <p id="reset-confirm-copy">
+              This permanently deletes all practice history, level and flower mastery, streaks,
+              reminders, and settings stored on this device.
+            </p>
+            <div className="reset-confirm-actions">
+              <button
+                type="button"
+                className="secondary-action"
+                onClick={() => setShowResetConfirm(false)}
+                autoFocus
+              >
+                Keep my progress
+              </button>
+              <button type="button" className="danger-action" onClick={resetApp}>
+                Reset app
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {levelUnlockNotice && (
         <div className="level-unlock-backdrop">
           <section
@@ -1250,17 +1291,8 @@ export default function App() {
             </div>
             <div className="section-card">
               <div className="section-heading">
-                <div><span className="eyebrow">LEARNING PATH</span><h2>Five measured steps</h2></div>
+                <div><span className="eyebrow">LEARNING PATH</span><h2>Practice and make each flower grow</h2></div>
                 <span>{WORDS.filter((w) => w.level <= unlockedLevel).length} words available</span>
-              </div>
-              <div className="mastery-key" aria-label="Permanent flower mastery stages">
-                {MASTERY_STAGES.map((stage) => (
-                  <span key={stage.name}>
-                    <img src={stage.image} alt="" aria-hidden="true" />
-                    <small><b>{stage.threshold}</b> {stage.name}</small>
-                  </span>
-                ))}
-                <p>Your flower never shrinks. The bud at 15 unlocks the next level.</p>
               </div>
               <div className="level-list">
                 {LEVELS.map((level, index) => {
@@ -1318,15 +1350,14 @@ export default function App() {
                   );
                 })}
               </div>
-            </div>
-            <div className="bridge-card">
-              <div className="bridge-ring" style={{ "--value": `${translitShare * 3.6}deg` } as React.CSSProperties}>
-                <strong>{translitShare}%</strong><span>bridge</span>
-              </div>
-              <div>
-                <span className="eyebrow">TRANSLITERATION FADE</span>
-                <h2>Training your eyes, not a crutch.</h2>
-                <p>Early questions connect script to sound. As your answers improve, Ravân replaces transliterations with meaning until you read Persian directly.</p>
+              <div className="mastery-key" aria-label="Permanent flower mastery stages">
+                {MASTERY_STAGES.map((stage) => (
+                  <span key={stage.name}>
+                    <img src={stage.image} alt="" aria-hidden="true" />
+                    <small><b>{stage.threshold}</b> {stage.name}</small>
+                  </span>
+                ))}
+                <p>Your flower never shrinks. The bud at 15 unlocks the next level.</p>
               </div>
             </div>
             <div className="section-card pattern-library">
@@ -1495,17 +1526,26 @@ export default function App() {
                 </div>
               </div>
             </div>
-            <button
-              type="button"
-              className="about-replay-link"
-              onClick={() => {
-                setOnboardingStep(0);
-                setShowOnboarding(true);
-                trackEvent("Onboarding Replayed");
-              }}
-            >
-              Replay introduction
-            </button>
+            <div className="about-utility-links">
+              <button
+                type="button"
+                className="about-replay-link"
+                onClick={() => {
+                  setOnboardingStep(0);
+                  setShowOnboarding(true);
+                  trackEvent("Onboarding Replayed");
+                }}
+              >
+                Replay introduction
+              </button>
+              <button
+                type="button"
+                className="about-reset-link"
+                onClick={() => setShowResetConfirm(true)}
+              >
+                Reset app
+              </button>
+            </div>
           </section>
         )}
       </main>

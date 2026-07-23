@@ -614,6 +614,34 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .level-unlock-actions .primary-action { margin-top: 0; }
 .level-unlock-actions .text-action { min-height: 38px; }
+.reset-confirm-splash {
+  width: min(100%, 410px);
+  padding: 30px 28px 26px;
+  border-radius: 26px;
+  background: var(--paper);
+  box-shadow: 0 28px 80px rgba(19, 33, 24, .28);
+  text-align: center;
+}
+.reset-confirm-splash h2 {
+  margin: 8px 0 10px;
+  color: var(--green-dark);
+  font-size: clamp(30px, 8vw, 40px);
+}
+.reset-confirm-splash > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+.reset-confirm-actions { margin-top: 22px; display: grid; gap: 8px; }
+.reset-confirm-actions button { min-height: 45px; cursor: pointer; }
+.danger-action {
+  border: 1px solid #d69a88;
+  border-radius: 12px;
+  background: #fff5f1;
+  color: #9d4b2b;
+  font-weight: 800;
+}
 
 .word-card {
   position: relative; min-height: 245px; padding: 20px;
@@ -737,13 +765,12 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .section-heading h2 { margin: 5px 0 0; }
 .section-heading > span { color: var(--muted); font-size: 10px; }
 .mastery-key {
-  margin: -2px 0 13px;
-  padding: 10px 12px;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 7px;
-  border-radius: 14px;
-  background: #f3efe7;
+  background: var(--paper);
 }
 .mastery-key > span {
   min-width: 0;
@@ -778,18 +805,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .level-mastery img { width: 35px; height: 35px; object-fit: contain; }
 .level-mastery small { line-height: 1.25; }
 .level-mastery.empty { opacity: .36; filter: grayscale(1); }
-.bridge-card { display: grid; grid-template-columns: 92px 1fr; gap: 20px; align-items: center; background: #e7dfd1; border-radius: 22px; padding: 20px; margin-top: 12px; }
-.bridge-card h2 { margin: 5px 0 6px; font-size: 21px; }
-.bridge-card p { margin: 0; color: #687067; line-height: 1.5; font-size: 11px; }
-.bridge-ring, .mini-ring {
+.mini-ring {
   background: conic-gradient(var(--orange) var(--value), #d4cbbd 0);
   border-radius: 50%; position: relative; display: grid; place-items: center;
 }
-.bridge-ring { width: 84px; height: 84px; }
-.bridge-ring::after, .mini-ring::after { content: ""; position: absolute; border-radius: 50%; background: #e7dfd1; inset: 7px; }
-.bridge-ring strong, .bridge-ring span { z-index: 1; }
-.bridge-ring strong { font-size: 18px; margin-top: 17px; }
-.bridge-ring span { font-size: 8px; color: var(--muted); margin-bottom: 17px; }
+.mini-ring::after { content: ""; position: absolute; border-radius: 50%; background: #e7dfd1; inset: 7px; }
 .pattern-library { margin-bottom: 8px; }
 .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .pattern-tile { padding: 13px; background: #f3efe7; border-radius: 14px; }
@@ -846,10 +866,23 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .preference-list > div > span { display: flex; flex-direction: column; gap: 3px; }
 .preference-list strong { font-size: 11px; }
 .preference-list small { color: var(--muted); font-size: 9px; }
-.about-replay-link {
-  display: block;
-  margin: 20px auto 4px;
-  padding: 7px 10px;
+.about-utility-links {
+  margin: 20px 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+.about-replay-link { padding: 7px 10px; }
+.about-reset-link {
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: #a26752;
+  font-size: 9px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 .word-table { background: var(--paper); border: 1px solid #e4ded2; border-radius: 20px; overflow: hidden; }
@@ -954,8 +987,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .level-row > span:last-child { display: none; }
   .level-mastery { grid-template-columns: 32px 1fr; }
   .level-mastery img { width: 32px; height: 32px; }
-  .bridge-card { grid-template-columns: 74px 1fr; gap: 14px; padding: 16px; }
-  .bridge-ring { width: 70px; height: 70px; }
   .section-heading > span { display: none; }
   .pattern-grid { grid-template-columns: 1fr; }
 }
