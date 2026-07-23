@@ -13,7 +13,7 @@ A mobile-first progressive web app for learning to read Persian through adaptive
 
 ## Word data
 
-The starter set lives at `src/data/words.json`. Each entry has a stable `id`, Persian spelling, transliteration, English meaning, difficulty level, frequency rank, and letter list. Optional pedagogical vowel forms are keyed by the same IDs in `src/data/vowels.json`; words without an entry safely fall back to their standard spelling. Replace or extend these files to scale toward 500+ words.
+The starter set lives at `src/data/words.json`. Each entry has a stable `id`, Persian spelling, transliteration, English meaning, difficulty level, frequency rank, and letter list. The current 121-word set includes every Persian letter in at least two quiz words. Optional pedagogical vowel forms are keyed by the same IDs in `src/data/vowels.json`; words without an entry safely fall back to their standard spelling. Replace or extend these files to scale toward 500+ words.
 
 ## Run locally
 
