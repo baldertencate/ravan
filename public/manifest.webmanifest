@@ -1,0 +1,12 @@
+{
+  "name": "Ravân — Learn to read Persian",
+  "short_name": "Ravân",
+  "description": "A calm, adaptive path to reading Persian.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3eee4",
+  "theme_color": "#2e5d45",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
