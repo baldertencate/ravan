@@ -10,6 +10,7 @@ type Word = {
   id: string;
   persian: string;
   transliteration: string;
+  spokenTransliteration?: string;
   meaning: string;
   level: number;
   rank: number;
@@ -174,6 +175,32 @@ function dayDifference(a: string, b: string) {
   );
 }
 
+function answerVariants(word: Word, mode: Mode) {
+  const answers =
+    mode === "transliteration"
+      ? [word.transliteration, word.spokenTransliteration]
+      : [word.meaning];
+  return answers
+    .filter((answer): answer is string => Boolean(answer))
+    .flatMap((answer) =>
+      answer
+        .trim()
+        .toLocaleLowerCase()
+        .split(/\s*\/\s*/)
+        .filter(Boolean),
+    );
+}
+
+function transliterationLabel(word: Word) {
+  return word.spokenTransliteration
+    ? `${word.transliteration} (spoken: ${word.spokenTransliteration})`
+    : word.transliteration;
+}
+
+function answerLabel(word: Word, mode: Mode) {
+  return mode === "transliteration" ? transliterationLabel(word) : word.meaning;
+}
+
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const fullPool = WORDS.filter((word) => word.level <= progress.activeLevel);
   const pool =
@@ -206,19 +233,13 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const mode: Mode =
     hasCorrectTransliteration && Math.random() < meaningChance ? "meaning" : "transliteration";
   const otherMode: Mode = mode === "meaning" ? "transliteration" : "meaning";
-  const answerVariants = (answer: string) =>
-    answer
-      .trim()
-      .toLocaleLowerCase()
-      .split(/\s*\/\s*/)
-      .filter(Boolean);
   const usedAnswers = new Set([
-    ...answerVariants(target[mode]),
-    ...answerVariants(target[otherMode]),
+    ...answerVariants(target, mode),
+    ...answerVariants(target, otherMode),
   ]);
   const distractors = shuffle(pool.filter((word) => word.id !== target.id))
     .filter((word) => {
-      const answers = answerVariants(word[mode]);
+      const answers = answerVariants(word, mode);
       if (answers.some((answer) => usedAnswers.has(answer))) return false;
       answers.forEach((answer) => usedAnswers.add(answer));
       return true;
@@ -1021,7 +1042,7 @@ export default function App() {
                         disabled={!!selected}
                       >
                         <span className="answer-key">{index + 1}</span>
-                        <span>{option[question.mode]}</span>
+                        <span>{answerLabel(option, question.mode)}</span>
                         {state === "correct" && <Icon name="check" />}
                       </button>
                     );
@@ -1090,7 +1111,7 @@ export default function App() {
                     {exerciseKind === "word" ? (
                       <>
                         <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
-                        {" · "}{question.word.transliteration} · {question.word.meaning}
+                        {" · "}{transliterationLabel(question.word)} · {question.word.meaning}
                       </>
                     ) : patternExercise ? (
                       <>
@@ -1218,7 +1239,10 @@ export default function App() {
                 return (
                   <div className="word-row" key={word.id}>
                     <div className="mini-ring" style={{ "--score": `${score * 3.6}deg` } as React.CSSProperties}><span>{score}</span></div>
-                    <div><strong lang="fa" dir="rtl">{displayWord(word)}</strong><span>{word.meaning}</span></div>
+                    <div>
+                      <strong lang="fa" dir="rtl">{displayWord(word)}</strong>
+                      <span>{transliterationLabel(word)} · {word.meaning}</span>
+                    </div>
                     <div><span>{stat.seen} reviews</span><small>{stat.dueAt <= Date.now() ? "Due now" : `in ${Math.max(1, Math.ceil((stat.dueAt - Date.now()) / 86_400_000))}d`}</small></div>
                   </div>
                 );
