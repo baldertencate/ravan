@@ -4,7 +4,7 @@ import vowelData from "./data/vowels.json";
 import patternsData from "./data/patterns.json";
 
 type Mode = "meaning" | "transliteration";
-type Tab = "learn" | "journey" | "words";
+type Tab = "learn" | "journey" | "words" | "about";
 type Word = {
   id: string;
   persian: string;
@@ -59,6 +59,15 @@ type PatternExercise = {
   stage: "isolation" | "context";
   example: { word: string; meaning: string; chunk?: string };
 };
+type ReminderSettings = {
+  enabled: boolean;
+  time: string;
+  interval: number;
+};
+type InstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
 
 const VOWELLED = vowelData as Record<string, string>;
 const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
@@ -68,6 +77,10 @@ const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
 const PATTERNS = patternsData as Pattern[];
 const STORAGE_KEY = "ravan-progress-v1";
 const VOWEL_KEY = "ravan-show-vowels-v1";
+const ONBOARDING_KEY = "ravan-onboarding-v1";
+const REMINDER_KEY = "ravan-reminder-v1";
+const HAPTICS_KEY = "ravan-haptics-v1";
+const APP_URL = "https://baldertencate.github.io/farsi/";
 const LEVELS = [
   { title: "First shapes", copy: "Short, frequent words · ا ب د م ن" },
   { title: "Joining letters", copy: "Everyday connectors and core verbs" },
@@ -97,6 +110,43 @@ function loadProgress(): Progress {
   } catch {
     return emptyProgress;
   }
+}
+
+function loadReminder(): ReminderSettings {
+  try {
+    const saved = localStorage.getItem(REMINDER_KEY);
+    return saved
+      ? { enabled: false, time: "19:00", interval: 1, ...JSON.parse(saved) }
+      : { enabled: false, time: "19:00", interval: 1 };
+  } catch {
+    return { enabled: false, time: "19:00", interval: 1 };
+  }
+}
+
+function isStandalone() {
+  return (
+    window.matchMedia("(display-mode: standalone)").matches ||
+    Boolean((navigator as Navigator & { standalone?: boolean }).standalone)
+  );
+}
+
+function shouldShowOnboarding() {
+  if (localStorage.getItem(ONBOARDING_KEY)) return false;
+  try {
+    const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as Partial<Progress>;
+    return !existing.totalAnswers;
+  } catch {
+    return true;
+  }
+}
+
+function calendarDate(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+}
+
+function utcCalendarDate(date: Date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
 function shuffle<T>(items: T[]) {
@@ -175,11 +225,12 @@ function choosePatternExercise(progress: Progress): PatternExercise {
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
 }
 
-function Icon({ name }: { name: "learn" | "journey" | "words" | "flame" | "clock" | "check" | "spark" }) {
+function Icon({ name }: { name: "learn" | "journey" | "words" | "about" | "flame" | "clock" | "check" | "spark" }) {
   const icons = {
     learn: "◉",
     journey: "↗",
     words: "≡",
+    about: "i",
     flame: "◆",
     clock: "◷",
     check: "✓",
@@ -199,10 +250,37 @@ export default function App() {
   const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
   const [exerciseKind, setExerciseKind] = useState<"word" | "pattern">("word");
   const [patternExercise, setPatternExercise] = useState<PatternExercise | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  const [reminder, setReminder] = useState<ReminderSettings>(loadReminder);
+  const [haptics, setHaptics] = useState(() => localStorage.getItem(HAPTICS_KEY) !== "false");
+  const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
+  const [installed, setInstalled] = useState(isStandalone);
+  const [showInstallHelp, setShowInstallHelp] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
   useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
+  useEffect(() => localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder)), [reminder]);
+  useEffect(() => localStorage.setItem(HAPTICS_KEY, String(haptics)), [haptics]);
+  useEffect(() => {
+    function captureInstallPrompt(event: Event) {
+      event.preventDefault();
+      setInstallPrompt(event as InstallPromptEvent);
+    }
+    function markInstalled() {
+      setInstalled(true);
+      setInstallPrompt(null);
+      setShowInstallHelp(false);
+    }
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    window.addEventListener("appinstalled", markInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+      window.removeEventListener("appinstalled", markInstalled);
+    };
+  }, []);
 
   const displayWord = (word: Word) => showVowels ? word.vowelled : word.persian;
 
@@ -244,11 +322,92 @@ export default function App() {
     );
   }
 
+  function hapticFeedback(correct: boolean) {
+    if (!haptics || !("vibrate" in navigator)) return;
+    navigator.vibrate(correct ? 18 : [28, 36, 28]);
+  }
+
+  async function installApp() {
+    if (installed) return;
+    if (!installPrompt) {
+      setShowInstallHelp(true);
+      return;
+    }
+    await installPrompt.prompt();
+    const choice = await installPrompt.userChoice;
+    if (choice.outcome === "accepted") setInstalled(true);
+    setInstallPrompt(null);
+  }
+
+  function downloadReminder() {
+    const [savedHour, savedMinute] = reminder.time.split(":").map(Number);
+    const hour = Number.isFinite(savedHour) ? savedHour : 19;
+    const minute = Number.isFinite(savedMinute) ? savedMinute : 0;
+    const start = new Date();
+    start.setSeconds(0, 0);
+    start.setHours(hour, minute, 0, 0);
+    if (start.getTime() <= Date.now()) start.setDate(start.getDate() + 1);
+    const end = new Date(start.getTime() + 15 * 60_000);
+    const calendar = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Ravan//Farsi Reading Practice//EN",
+      "CALSCALE:GREGORIAN",
+      "BEGIN:VEVENT",
+      `UID:ravan-practice-${Date.now()}@baldertencate.github.io`,
+      `DTSTAMP:${utcCalendarDate(new Date())}`,
+      `DTSTART:${calendarDate(start)}`,
+      `DTEND:${calendarDate(end)}`,
+      `RRULE:FREQ=DAILY;INTERVAL=${reminder.interval}`,
+      "SUMMARY:Ravân — Farsi reading practice",
+      "DESCRIPTION:A short Persian reading practice with Ravân.",
+      `URL:${APP_URL}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const url = URL.createObjectURL(new Blob([calendar], { type: "text/calendar;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "ravan-practice-reminder.ics";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+  }
+
+  function finishOnboarding() {
+    if (reminder.enabled) downloadReminder();
+    localStorage.setItem(ONBOARDING_KEY, "complete");
+    setShowOnboarding(false);
+    setOnboardingStep(0);
+    setTab("learn");
+  }
+
+  async function shareApp() {
+    const shareData = {
+      title: "Ravân: Learn to Read Farsi",
+      text: "Learn to read Persian script through short, adaptive practice.",
+      url: APP_URL,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        setShareStatus("Shared");
+      } else {
+        await navigator.clipboard.writeText(APP_URL);
+        setShareStatus("Link copied");
+      }
+    } catch {
+      setShareStatus("");
+    }
+  }
+
   function answer(option: Word) {
     if (selected) return;
     const correct = option.id === question.word.id;
     const elapsed = Math.min(30_000, Date.now() - startedAt.current);
     const today = dayKey();
+    hapticFeedback(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -308,6 +467,7 @@ export default function App() {
     const correct = option.id === patternExercise.pattern.id;
     const elapsed = Math.min(30_000, Date.now() - startedAt.current);
     const today = dayKey();
+    hapticFeedback(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
@@ -410,12 +570,123 @@ export default function App() {
     [progress.words],
   );
 
+  if (showOnboarding) {
+    return (
+      <main className="onboarding-shell">
+        <section className="onboarding-card">
+          <header className="onboarding-brand">
+            <span className="brand-mark" lang="fa" dir="rtl">روان</span>
+            <span><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
+          </header>
+          <div className="onboarding-steps" aria-label={`Introduction step ${onboardingStep + 1} of 3`}>
+            {[0, 1, 2].map((step) => <i className={step <= onboardingStep ? "active" : ""} key={step} />)}
+          </div>
+
+          {onboardingStep === 0 && (
+            <div className="onboarding-panel">
+              <span className="eyebrow">PERSIAN SCRIPT, MADE APPROACHABLE</span>
+              <div className="onboarding-word" lang="fa" dir="rtl">بخوان</div>
+              <h1>Learn to read Farsi, one word at a time.</h1>
+              <p>Short, adaptive exercises train your eyes to recognize Persian words without becoming dependent on Latin letters.</p>
+              <div className="onboarding-benefits">
+                <span><b>01</b> Connect script to pronunciation</span>
+                <span><b>02</b> Recognize useful visual patterns</span>
+                <span><b>03</b> Read directly for meaning</span>
+              </div>
+              <button className="primary-action" onClick={() => setOnboardingStep(1)}>
+                See how it works <span>→</span>
+              </button>
+            </div>
+          )}
+
+          {onboardingStep === 1 && (
+            <div className="onboarding-panel">
+              <span className="eyebrow">A BRIDGE YOU GRADUALLY LEAVE BEHIND</span>
+              <h1>Built to outgrow transliteration.</h1>
+              <p>Ravân starts by connecting Persian spelling to sound, then shifts toward English meaning as each word becomes familiar.</p>
+              <div className="method-preview">
+                <div><span>در</span><strong>Sound bridge</strong><small>First match the script to <i>dar</i>.</small></div>
+                <div><span>می‌ـ</span><strong>Pattern checks</strong><small>Learn recurring chunks as visual units.</small></div>
+                <div><span>کتاب</span><strong>Read for meaning</strong><small>Eventually recognize “book” directly.</small></div>
+              </div>
+              <button className="primary-action" onClick={() => setOnboardingStep(2)}>
+                Make it yours <span>→</span>
+              </button>
+              <button className="text-action" onClick={() => setOnboardingStep(0)}>Back</button>
+            </div>
+          )}
+
+          {onboardingStep === 2 && (
+            <div className="onboarding-panel">
+              <span className="eyebrow">READY WHEN YOU ARE</span>
+              <h1>Make practice easy to return to.</h1>
+              <p>Add Ravân to your Home Screen for an app-like experience. You can also create a recurring calendar reminder without making an account.</p>
+
+              {!installed && (
+                <div className="onboarding-install">
+                  <div><strong>Add to Home Screen</strong><small>Opens full-screen and stays one tap away.</small></div>
+                  <button onClick={installApp}>Add</button>
+                </div>
+              )}
+              {showInstallHelp && !installed && (
+                <div className="install-help">
+                  <strong>Install from your browser</strong>
+                  <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
+                  <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
+                </div>
+              )}
+
+              <label className="reminder-choice">
+                <input
+                  type="checkbox"
+                  checked={reminder.enabled}
+                  onChange={(event) => setReminder((current) => ({ ...current, enabled: event.target.checked }))}
+                />
+                <span><strong>Create a practice reminder</strong><small>Uses your phone’s calendar so it works even when the web app is closed.</small></span>
+              </label>
+              {reminder.enabled && (
+                <div className="reminder-controls">
+                  <label>
+                    <span>Time</span>
+                    <input
+                      type="time"
+                      value={reminder.time}
+                      onChange={(event) => setReminder((current) => ({ ...current, time: event.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <span>Repeat</span>
+                    <select
+                      value={reminder.interval}
+                      onChange={(event) => setReminder((current) => ({ ...current, interval: Number(event.target.value) }))}
+                    >
+                      <option value={1}>Every day</option>
+                      <option value={2}>Every 2 days</option>
+                      <option value={3}>Every 3 days</option>
+                      <option value={7}>Every week</option>
+                    </select>
+                  </label>
+                </div>
+              )}
+              <button className="primary-action" onClick={finishOnboarding}>
+                Start practicing <span>→</span>
+              </button>
+              <button className="text-action" onClick={() => setOnboardingStep(1)}>Back</button>
+            </div>
+          )}
+
+          <button className="skip-intro" onClick={finishOnboarding}>Skip introduction</button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => setTab("learn")} aria-label="Ravân home">
           <span className="brand-mark" lang="fa" dir="rtl">روان</span>
-          <span>Ravân</span>
+          <span className="brand-copy"><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
         </button>
         <div className="header-stats">
           <span className="streak-pill">{progress.dayStreak} day streak</span>
@@ -761,12 +1032,148 @@ export default function App() {
             </div>
           </section>
         )}
+
+        {tab === "about" && (
+          <section className="about-view">
+            <div className="page-intro">
+              <span className="eyebrow">ABOUT RAVÂN</span>
+              <h1>Learn to read Farsi—not lean on transliteration.</h1>
+              <p>Ravân is a calm, adaptive path from unfamiliar Persian shapes to words you recognize directly.</p>
+            </div>
+
+            <div className="about-hero">
+              <span className="about-mark" lang="fa" dir="rtl">روان</span>
+              <div>
+                <span className="eyebrow">THE METHOD</span>
+                <h2>A bridge from sound to meaning</h2>
+                <p>Each word begins with a pronunciation match. Once that connection is secure, Ravân increasingly asks for meaning and revisits anything you miss.</p>
+              </div>
+            </div>
+
+            <div className="about-method">
+              <div><b>1</b><strong>Sound bridge</strong><span>Connect Persian spelling to pronunciation.</span></div>
+              <div><b>2</b><strong>Pattern recognition</strong><span>Spot recurring chunks inside real words.</span></div>
+              <div><b>3</b><strong>Direct reading</strong><span>Gradually respond without Latin letters.</span></div>
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-heading">
+                <div><span className="eyebrow">ON YOUR PHONE</span><h2>{installed ? "Ravân is installed" : "Keep Ravân one tap away"}</h2></div>
+                {!installed && <button className="small-action" onClick={installApp}>Add to Home Screen</button>}
+              </div>
+              <p>{installed ? "You’re using Ravân as a Home Screen app." : "Install the web app for a full-screen, app-like experience without an app store."}</p>
+              {showInstallHelp && !installed && (
+                <div className="install-help">
+                  <strong>Install from your browser</strong>
+                  <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
+                  <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
+                </div>
+              )}
+              <button className="secondary-action" onClick={shareApp}>Share Ravân</button>
+              {shareStatus && <span className="action-status">{shareStatus}</span>}
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-heading">
+                <div><span className="eyebrow">PRACTICE REMINDER</span><h2>Return on your rhythm</h2></div>
+                <button
+                  type="button"
+                  className="vowel-toggle settings-toggle"
+                  role="switch"
+                  aria-checked={reminder.enabled}
+                  onClick={() => setReminder((current) => ({ ...current, enabled: !current.enabled }))}
+                >
+                  <span className="toggle-track"><span /></span>
+                  {reminder.enabled ? "On" : "Off"}
+                </button>
+              </div>
+              <p>Static websites cannot reliably send scheduled notifications while closed. Ravân can instead add a recurring event to your phone’s calendar.</p>
+              {reminder.enabled && (
+                <>
+                  <div className="reminder-controls">
+                    <label>
+                      <span>Time</span>
+                      <input
+                        type="time"
+                        value={reminder.time}
+                        onChange={(event) => setReminder((current) => ({ ...current, time: event.target.value }))}
+                      />
+                    </label>
+                    <label>
+                      <span>Repeat</span>
+                      <select
+                        value={reminder.interval}
+                        onChange={(event) => setReminder((current) => ({ ...current, interval: Number(event.target.value) }))}
+                      >
+                        <option value={1}>Every day</option>
+                        <option value={2}>Every 2 days</option>
+                        <option value={3}>Every 3 days</option>
+                        <option value={7}>Every week</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button className="secondary-action" onClick={downloadReminder}>Add reminder to calendar</button>
+                </>
+              )}
+            </div>
+
+            <div className="settings-card">
+              <div className="settings-heading">
+                <div><span className="eyebrow">PREFERENCES</span><h2>Make practice comfortable</h2></div>
+              </div>
+              <div className="preference-list">
+                <div>
+                  <span><strong>Vowel marks</strong><small>Show teaching marks when available.</small></span>
+                  <button
+                    type="button"
+                    className="vowel-toggle settings-toggle"
+                    role="switch"
+                    aria-checked={showVowels}
+                    onClick={() => setShowVowels((visible) => !visible)}
+                  >
+                    <span className="toggle-track"><span /></span>
+                    {showVowels ? "On" : "Off"}
+                  </button>
+                </div>
+                <div>
+                  <span><strong>Gentle haptics</strong><small>Short feedback taps on supported Android phones.</small></span>
+                  <button
+                    type="button"
+                    className="vowel-toggle settings-toggle"
+                    role="switch"
+                    aria-checked={haptics}
+                    onClick={() => setHaptics((enabled) => !enabled)}
+                  >
+                    <span className="toggle-track"><span /></span>
+                    {haptics ? "On" : "Off"}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="privacy-card">
+              <div><span aria-hidden="true">✓</span><strong>Private by default</strong></div>
+              <p>Your learning progress and preferences stay in this browser on this device. Ravân has no account, advertising, or tracking.</p>
+            </div>
+
+            <button
+              className="replay-intro"
+              onClick={() => {
+                setOnboardingStep(0);
+                setShowOnboarding(true);
+              }}
+            >
+              Replay the introduction
+            </button>
+          </section>
+        )}
       </main>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        {(["learn", "journey", "words"] as Tab[]).map((item) => (
+        {(["learn", "journey", "words", "about"] as Tab[]).map((item) => (
           <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>
-            <Icon name={item} /><span>{item === "learn" ? "Practice" : item[0].toUpperCase() + item.slice(1)}</span>
+            <Icon name={item} />
+            <span>{item === "learn" ? "Practice" : item[0].toUpperCase() + item.slice(1)}</span>
           </button>
         ))}
       </nav>

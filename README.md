@@ -1,4 +1,4 @@
-# Ravân
+# Ravân: Learn to Read Farsi
 
 A mobile-first progressive web app for learning to read Persian through adaptive multiple-choice practice.
 
@@ -9,7 +9,16 @@ A mobile-first progressive web app for learning to read Persian through adaptive
 - Introduces English-meaning questions only after that word has first been matched to its transliteration correctly; a missed meaning relocks the word until its pronunciation is answered correctly again
 - Teaches recurring visual chunks such as `می‌ـ`, `نمی‌ـ`, plural `ـها`, and common verb endings through scored questions—first in isolation, then highlighted inside real words
 - Tracks accuracy, answer speed, daily streaks, and per-word progress locally
+- Introduces the method through a focused first-run onboarding
+- Installs to a phone Home Screen with dedicated app icons and full-screen presentation
+- Offers recurring calendar reminders without requiring an account or notification server
+- Uses gentle answer haptics on supported Android devices
+- Includes an About and Settings area for installation, reminders, sharing, vowel marks, haptics, privacy, and replaying onboarding
 - Works offline after the first visit
+
+## Native preparation
+
+The intended first native release keeps the existing React learning experience and adds optional scheduled notifications—configured by time of day and an every-X-days cadence—plus simple haptics. Audio, payments, cloud sync, widgets, and deeper native integrations are intentionally deferred.
 
 ## Word data
 

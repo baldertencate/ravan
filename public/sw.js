@@ -1,5 +1,13 @@
-const CACHE = "ravan-v1";
-const SHELL = ["./", "./manifest.webmanifest", "./favicon.svg"];
+const CACHE = "ravan-v2";
+const SHELL = [
+  "./",
+  "./manifest.webmanifest",
+  "./icon-64.png",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon-maskable-512.png",
+  "./apple-touch-icon.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
