@@ -81,8 +81,12 @@ function dayDifference(a: string, b: string) {
   );
 }
 
-function chooseQuestion(progress: Progress): Question {
-  const pool = WORDS.filter((word) => word.level <= progress.activeLevel);
+function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
+  const fullPool = WORDS.filter((word) => word.level <= progress.activeLevel);
+  const pool =
+    excludeWordId && fullPool.length > 1
+      ? fullPool.filter((word) => word.id !== excludeWordId)
+      : fullPool;
   const now = Date.now();
   const weighted = pool.map((word) => {
     const stat = progress.words[word.id];
@@ -132,6 +136,7 @@ export default function App() {
   const [selected, setSelected] = useState<string | null>(null);
   const [answeredCorrectly, setAnsweredCorrectly] = useState<boolean | null>(null);
   const [session, setSession] = useState({ correct: 0, answers: 0 });
+  const [showModeHelp, setShowModeHelp] = useState(false);
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
@@ -210,9 +215,10 @@ export default function App() {
 
   function nextQuestion() {
     const nextProgress = { ...progress };
-    setQuestion(chooseQuestion(nextProgress));
+    setQuestion(chooseQuestion(nextProgress, question.word.id));
     setSelected(null);
     setAnsweredCorrectly(null);
+    setShowModeHelp(false);
     startedAt.current = Date.now();
   }
 
@@ -226,9 +232,10 @@ export default function App() {
       streak: 0,
     };
     setProgress(nextProgress);
-    setQuestion(chooseQuestion(nextProgress));
+    setQuestion(chooseQuestion(nextProgress, question.word.id));
     setSelected(null);
     setAnsweredCorrectly(null);
+    setShowModeHelp(false);
     setSession({ correct: 0, answers: 0 });
     startedAt.current = Date.now();
   }
@@ -315,12 +322,34 @@ export default function App() {
 
             <article className={`word-card ${selected ? "answered" : ""}`}>
               <div className="card-topline">
-                <span className={`mode-tag ${question.mode}`}>
+                <button
+                  type="button"
+                  className={`mode-tag ${question.mode}`}
+                  onClick={() => setShowModeHelp((visible) => !visible)}
+                  aria-expanded={showModeHelp}
+                  aria-controls="question-mode-help"
+                >
                   <Icon name={question.mode === "meaning" ? "spark" : "learn"} />
                   {question.mode === "meaning" ? "MEANING" : "SOUND BRIDGE"}
-                </span>
-                <span className="word-count">{Math.max(1, session.answers + 1)} of 10</span>
+                  <span className="help-mark">?</span>
+                </button>
+                <span className="practice-level">LEVEL {progress.activeLevel} · {LEVELS[progress.activeLevel - 1].title}</span>
               </div>
+              {showModeHelp && (
+                <div className="mode-explainer" id="question-mode-help">
+                  {question.mode === "transliteration" ? (
+                    <>
+                      <strong>A temporary bridge to sound</strong>
+                      <span>You’re matching Persian script to its pronunciation. Ravân shows this less often as you improve, so you don’t become dependent on Latin letters.</span>
+                    </>
+                  ) : (
+                    <>
+                      <strong>Reading directly for meaning</strong>
+                      <span>This is the long-term goal: recognizing the Persian word without relying on a transliteration.</span>
+                    </>
+                  )}
+                </div>
+              )}
               <div className="persian-word" lang="fa" dir="rtl">{question.word.persian}</div>
               <p className="prompt">
                 Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
