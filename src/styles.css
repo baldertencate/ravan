@@ -304,6 +304,25 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .pattern-grid { grid-template-columns: 1fr; }
 }
 
+@media (max-width: 600px), (max-height: 700px) and (pointer: coarse) {
+  .feedback {
+    position: fixed;
+    z-index: 30;
+    left: 50%;
+    right: auto;
+    bottom: calc(76px + env(safe-area-inset-bottom));
+    width: min(calc(100vw - 24px), 560px);
+    margin: 0;
+    transform: translateX(-50%);
+    border: 1px solid rgba(44, 67, 51, .14);
+    box-shadow: 0 14px 34px rgba(35, 49, 39, .24);
+  }
+
+  .feedback button {
+    min-height: 44px;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .word-card { animation: rise .35s ease-out; }
   @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
