@@ -23,6 +23,11 @@ type WordProgress = {
   dueAt: number;
   avgMs: number;
 };
+type PatternProgress = {
+  seen: number;
+  correct: number;
+  wrong: number;
+};
 type Progress = {
   words: Record<string, WordProgress>;
   totalCorrect: number;
@@ -34,7 +39,7 @@ type Progress = {
   lastStudyDay: string;
   activeLevel: number;
   highestLevel: number;
-  patternViews: Record<string, number>;
+  patternStats: Record<string, PatternProgress>;
 };
 type Question = { word: Word; options: Word[]; mode: Mode };
 type Pattern = {
@@ -45,7 +50,13 @@ type Pattern = {
   meaning: string;
   level: number;
   position: "prefix" | "suffix";
-  examples: { word: string; meaning: string }[];
+  examples: { word: string; meaning: string; chunk?: string }[];
+};
+type PatternExercise = {
+  pattern: Pattern;
+  options: Pattern[];
+  stage: "isolation" | "context";
+  example: { word: string; meaning: string; chunk?: string };
 };
 
 const VOWELLED = vowelData as Record<string, string>;
@@ -75,7 +86,7 @@ const emptyProgress: Progress = {
   lastStudyDay: "",
   activeLevel: 1,
   highestLevel: 1,
-  patternViews: {},
+  patternStats: {},
 };
 
 function loadProgress(): Progress {
@@ -137,6 +148,30 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   return { word: target, options: shuffle([target, ...distractors]), mode };
 }
 
+function choosePatternExercise(progress: Progress): PatternExercise {
+  const available = PATTERNS.filter((pattern) => pattern.level <= progress.activeLevel);
+  const weighted = available.map((pattern) => {
+    const stat = progress.patternStats[pattern.id];
+    return {
+      pattern,
+      weight: stat ? 1 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6 : 12,
+    };
+  });
+  const total = weighted.reduce((sum, item) => sum + item.weight, 0);
+  let pick = Math.random() * total;
+  const pattern =
+    weighted.find((item) => {
+      pick -= item.weight;
+      return pick <= 0;
+    })?.pattern ?? available[0];
+  const stat = progress.patternStats[pattern.id];
+  const stage: "isolation" | "context" =
+    stat && stat.seen >= 3 && stat.correct / stat.seen >= 0.67 ? "context" : "isolation";
+  const example = pattern.examples[(stat?.seen ?? 0) % pattern.examples.length];
+  const distractors = shuffle(PATTERNS.filter((item) => item.id !== pattern.id)).slice(0, 3);
+  return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
+}
+
 function Icon({ name }: { name: "learn" | "journey" | "words" | "flame" | "clock" | "check" | "spark" }) {
   const icons = {
     learn: "◉",
@@ -159,6 +194,8 @@ export default function App() {
   const [session, setSession] = useState({ correct: 0, answers: 0 });
   const [showModeHelp, setShowModeHelp] = useState(false);
   const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
+  const [exerciseKind, setExerciseKind] = useState<"word" | "pattern">("word");
+  const [patternExercise, setPatternExercise] = useState<PatternExercise | null>(null);
   const startedAt = useRef(Date.now());
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
@@ -184,13 +221,6 @@ export default function App() {
     return stat && stat.dueAt <= Date.now();
   }).length;
   const translitShare = Math.max(12, Math.round(75 - Math.min(63, progress.totalCorrect * 0.45)));
-  const availablePatterns = PATTERNS.filter((pattern) => pattern.level <= progress.activeLevel);
-  const activePattern = availablePatterns.length
-    ? availablePatterns[session.answers % availablePatterns.length]
-    : null;
-  const patternIsIsolated = activePattern
-    ? (progress.patternViews[activePattern.id] ?? 0) < 3
-    : false;
   const matchedPattern = PATTERNS.find(
     (pattern) =>
       pattern.level <= progress.activeLevel &&
@@ -198,14 +228,15 @@ export default function App() {
       question.word.persian.includes(pattern.chunk),
   );
 
-  function highlightPattern(text: string, pattern: Pattern) {
-    const index = text.indexOf(pattern.chunk);
+  function highlightPattern(text: string, pattern: Pattern, exampleChunk?: string) {
+    const chunk = exampleChunk ?? pattern.chunk;
+    const index = pattern.position === "suffix" ? text.lastIndexOf(chunk) : text.indexOf(chunk);
     if (index < 0) return text;
     return (
       <>
         {text.slice(0, index)}
-        <mark>{text.slice(index, index + pattern.chunk.length)}</mark>
-        {text.slice(index + pattern.chunk.length)}
+        <mark>{text.slice(index, index + chunk.length)}</mark>
+        {text.slice(index + chunk.length)}
       </>
     );
   }
@@ -259,19 +290,62 @@ export default function App() {
         bestStreak: Math.max(current.bestStreak, streak),
         dayStreak,
         lastStudyDay: today,
-        patternViews: activePattern
-          ? {
-              ...current.patternViews,
-              [activePattern.id]: (current.patternViews[activePattern.id] ?? 0) + 1,
-            }
-          : current.patternViews,
+      };
+    });
+  }
+
+  function answerPattern(option: Pattern) {
+    if (selected || !patternExercise) return;
+    const correct = option.id === patternExercise.pattern.id;
+    const elapsed = Math.min(30_000, Date.now() - startedAt.current);
+    const today = dayKey();
+    setSelected(option.id);
+    setAnsweredCorrectly(correct);
+    setSession((current) => ({
+      answers: current.answers + 1,
+      correct: current.correct + (correct ? 1 : 0),
+    }));
+    setProgress((current) => {
+      const previous = current.patternStats[patternExercise.pattern.id] ?? {
+        seen: 0,
+        correct: 0,
+        wrong: 0,
+      };
+      const gap = current.lastStudyDay ? dayDifference(current.lastStudyDay, today) : 0;
+      const dayStreak =
+        current.lastStudyDay === today ? current.dayStreak : gap === 1 ? current.dayStreak + 1 : 1;
+      const streak = correct ? current.streak + 1 : 0;
+      return {
+        ...current,
+        patternStats: {
+          ...current.patternStats,
+          [patternExercise.pattern.id]: {
+            seen: previous.seen + 1,
+            correct: previous.correct + (correct ? 1 : 0),
+            wrong: previous.wrong + (correct ? 0 : 1),
+          },
+        },
+        totalCorrect: current.totalCorrect + (correct ? 1 : 0),
+        totalAnswers: current.totalAnswers + 1,
+        totalMs: current.totalMs + elapsed,
+        streak,
+        bestStreak: Math.max(current.bestStreak, streak),
+        dayStreak,
+        lastStudyDay: today,
       };
     });
   }
 
   function nextQuestion() {
     const nextProgress = { ...progress };
-    setQuestion(chooseQuestion(nextProgress, question.word.id));
+    const patternNext = progress.activeLevel >= 2 && (session.answers + 1) % 4 === 0;
+    if (patternNext) {
+      setPatternExercise(choosePatternExercise(nextProgress));
+      setExerciseKind("pattern");
+    } else {
+      setQuestion(chooseQuestion(nextProgress, question.word.id));
+      setExerciseKind("word");
+    }
     setSelected(null);
     setAnsweredCorrectly(null);
     setShowModeHelp(false);
@@ -289,6 +363,7 @@ export default function App() {
     };
     setProgress(nextProgress);
     setQuestion(chooseQuestion(nextProgress, question.word.id));
+    setExerciseKind("word");
     setSelected(null);
     setAnsweredCorrectly(null);
     setShowModeHelp(false);
@@ -300,7 +375,18 @@ export default function App() {
     function onKey(event: KeyboardEvent) {
       if (tab !== "learn") return;
       const index = Number(event.key) - 1;
-      if (!selected && index >= 0 && index < question.options.length) answer(question.options[index]);
+      if (!selected && exerciseKind === "word" && index >= 0 && index < question.options.length) {
+        answer(question.options[index]);
+      }
+      if (
+        !selected &&
+        exerciseKind === "pattern" &&
+        patternExercise &&
+        index >= 0 &&
+        index < patternExercise.options.length
+      ) {
+        answerPattern(patternExercise.options[index]);
+      }
       if (selected && (event.key === "Enter" || event.key === " ")) nextQuestion();
     }
     window.addEventListener("keydown", onKey);
@@ -341,7 +427,7 @@ export default function App() {
             <div className="session-row">
               <div>
                 <span className="eyebrow">TODAY’S PRACTICE</span>
-                <h1>Read the word</h1>
+                <h1>{exerciseKind === "pattern" ? "Spot the pattern" : "Read the word"}</h1>
               </div>
               <div className="session-tools">
                 <div className="session-score">
@@ -386,94 +472,158 @@ export default function App() {
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
             </div>
 
-            <article className={`word-card ${selected ? "answered" : ""}`}>
-              <div className="card-topline">
-                <button
-                  type="button"
-                  className={`mode-tag ${question.mode}`}
-                  onClick={() => setShowModeHelp((visible) => !visible)}
-                  aria-expanded={showModeHelp}
-                  aria-controls="question-mode-help"
-                >
-                  <Icon name={question.mode === "meaning" ? "spark" : "learn"} />
-                  {question.mode === "meaning" ? "MEANING" : "SOUND BRIDGE"}
-                  <span className="help-mark">?</span>
-                </button>
-                <button
-                  type="button"
-                  className="vowel-toggle card-vowel-toggle"
-                  role="switch"
-                  aria-checked={showVowels}
-                  onClick={() => setShowVowels((visible) => !visible)}
-                >
-                  <span className="toggle-track"><span /></span>
-                  Vowel marks
-                </button>
-              </div>
-              {showModeHelp && (
-                <div className="mode-explainer" id="question-mode-help">
-                  {question.mode === "transliteration" ? (
-                    <>
-                      <strong>A temporary bridge to sound</strong>
-                      <span>You’re matching Persian script to its pronunciation. Ravân shows this less often as you improve, so you don’t become dependent on Latin letters.</span>
-                    </>
-                  ) : (
-                    <>
-                      <strong>Reading directly for meaning</strong>
-                      <span>This is the long-term goal: recognizing the Persian word without relying on a transliteration.</span>
-                    </>
+            {exerciseKind === "word" ? (
+              <>
+                <article className={`word-card ${selected ? "answered" : ""}`}>
+                  <div className="card-topline">
+                    <button
+                      type="button"
+                      className={`mode-tag ${question.mode}`}
+                      onClick={() => setShowModeHelp((visible) => !visible)}
+                      aria-expanded={showModeHelp}
+                      aria-controls="question-mode-help"
+                    >
+                      <Icon name={question.mode === "meaning" ? "spark" : "learn"} />
+                      {question.mode === "meaning" ? "MEANING" : "SOUND BRIDGE"}
+                      <span className="help-mark">?</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="vowel-toggle card-vowel-toggle"
+                      role="switch"
+                      aria-checked={showVowels}
+                      onClick={() => setShowVowels((visible) => !visible)}
+                    >
+                      <span className="toggle-track"><span /></span>
+                      Vowel marks
+                    </button>
+                  </div>
+                  {showModeHelp && (
+                    <div className="mode-explainer" id="question-mode-help">
+                      {question.mode === "transliteration" ? (
+                        <>
+                          <strong>A temporary bridge to sound</strong>
+                          <span>You’re matching Persian script to its pronunciation. Ravân shows this less often as you improve, so you don’t become dependent on Latin letters.</span>
+                        </>
+                      ) : (
+                        <>
+                          <strong>Reading directly for meaning</strong>
+                          <span>This is the long-term goal: recognizing the Persian word without relying on a transliteration.</span>
+                        </>
+                      )}
+                    </div>
                   )}
+                  <div className="persian-word" lang="fa" dir="rtl">
+                    {!showVowels && matchedPattern
+                      ? highlightPattern(question.word.persian, matchedPattern)
+                      : displayWord(question.word)}
+                  </div>
+                  {matchedPattern && (
+                    <div className="word-pattern-note">
+                      <span lang="fa" dir="rtl">{matchedPattern.form}</span>
+                      <strong>{matchedPattern.name}</strong>
+                      <small>{matchedPattern.meaning}</small>
+                    </div>
+                  )}
+                  <p className="prompt">
+                    Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
+                  </p>
+                </article>
+                <div className="answers" aria-label="Answer options">
+                  {question.options.map((option, index) => {
+                    const isCorrect = option.id === question.word.id;
+                    const state = selected
+                      ? isCorrect
+                        ? "correct"
+                        : selected === option.id
+                          ? "wrong"
+                          : "dim"
+                      : "";
+                    return (
+                      <button
+                        key={option.id}
+                        className={`answer ${state}`}
+                        onClick={() => answer(option)}
+                        disabled={!!selected}
+                      >
+                        <span className="answer-key">{index + 1}</span>
+                        <span>{option[question.mode]}</span>
+                        {state === "correct" && <Icon name="check" />}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-              <div className="persian-word" lang="fa" dir="rtl">
-                {!showVowels && matchedPattern
-                  ? highlightPattern(question.word.persian, matchedPattern)
-                  : displayWord(question.word)}
-              </div>
-              {matchedPattern && (
-                <div className="word-pattern-note">
-                  <span lang="fa" dir="rtl">{matchedPattern.form}</span>
-                  <strong>{matchedPattern.name}</strong>
-                  <small>{matchedPattern.meaning}</small>
+              </>
+            ) : patternExercise ? (
+              <>
+                <article className={`word-card pattern-question-card ${selected ? "answered" : ""}`}>
+                  <div className="card-topline">
+                    <span className="mode-tag pattern-mode"><Icon name="spark" /> PATTERN CHECK</span>
+                    <span className="pattern-stage">
+                      {patternExercise.stage === "isolation" ? "SHAPE FIRST" : "IN CONTEXT"}
+                    </span>
+                  </div>
+                  <div className="pattern-question-word" lang="fa" dir="rtl">
+                    {patternExercise.stage === "isolation"
+                      ? patternExercise.pattern.form
+                      : highlightPattern(
+                          patternExercise.example.word,
+                          patternExercise.pattern,
+                          patternExercise.example.chunk,
+                        )}
+                  </div>
+                  {patternExercise.stage === "context" && (
+                    <span className="pattern-example-meaning">{patternExercise.example.meaning}</span>
+                  )}
+                  <p className="prompt">
+                    {patternExercise.stage === "isolation"
+                      ? "What does this visual pattern signal?"
+                      : "What does the highlighted chunk signal?"}
+                  </p>
+                </article>
+                <div className="answers pattern-answers" aria-label="Pattern answer options">
+                  {patternExercise.options.map((option, index) => {
+                    const isCorrect = option.id === patternExercise.pattern.id;
+                    const state = selected
+                      ? isCorrect
+                        ? "correct"
+                        : selected === option.id
+                          ? "wrong"
+                          : "dim"
+                      : "";
+                    return (
+                      <button
+                        key={option.id}
+                        className={`answer ${state}`}
+                        onClick={() => answerPattern(option)}
+                        disabled={!!selected}
+                      >
+                        <span className="answer-key">{index + 1}</span>
+                        <span>{option.name}</span>
+                        {state === "correct" && <Icon name="check" />}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-              <p className="prompt">
-                Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
-              </p>
-            </article>
-
-            <div className="answers" aria-label="Answer options">
-              {question.options.map((option, index) => {
-                const isCorrect = option.id === question.word.id;
-                const state = selected
-                  ? isCorrect
-                    ? "correct"
-                    : selected === option.id
-                      ? "wrong"
-                      : "dim"
-                  : "";
-                return (
-                  <button
-                    key={option.id}
-                    className={`answer ${state}`}
-                    onClick={() => answer(option)}
-                    disabled={!!selected}
-                  >
-                    <span className="answer-key">{index + 1}</span>
-                    <span>{option[question.mode]}</span>
-                    {state === "correct" && <Icon name="check" />}
-                  </button>
-                );
-              })}
-            </div>
+              </>
+            ) : null}
 
             {selected && (
               <div className={`feedback ${answeredCorrectly ? "success" : "retry"}`}>
                 <div>
                   <strong>{answeredCorrectly ? "That’s it." : "Not quite — keep this one close."}</strong>
                   <span>
-                    <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
-                    {" · "}{question.word.transliteration} · {question.word.meaning}
+                    {exerciseKind === "word" ? (
+                      <>
+                        <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
+                        {" · "}{question.word.transliteration} · {question.word.meaning}
+                      </>
+                    ) : patternExercise ? (
+                      <>
+                        <b lang="fa" dir="rtl">{patternExercise.pattern.form}</b>
+                        {" · "}{patternExercise.pattern.name} · {patternExercise.pattern.meaning}
+                      </>
+                    ) : null}
                   </span>
                 </div>
                 <button onClick={nextQuestion}>Continue <span>↵</span></button>
@@ -483,48 +633,11 @@ export default function App() {
             {!selected && (
               <div className="adapt-note">
                 <Icon name="spark" />
-                <span><strong>Adapting to you.</strong> Missed words return sooner.</span>
+                <span>
+                  <strong>Adapting to you.</strong>{" "}
+                  {exerciseKind === "pattern" ? "Missed patterns return sooner." : "Missed words return sooner."}
+                </span>
               </div>
-            )}
-
-            {activePattern && (
-              <aside className="pattern-pulse">
-                <div className="pattern-pulse-heading">
-                  <div>
-                    <span className="eyebrow">
-                      PATTERN SPOTLIGHT · {patternIsIsolated ? "ISOLATION" : "IN CONTEXT"}
-                    </span>
-                    <h2><b lang="fa" dir="rtl">{activePattern.form}</b> {activePattern.name}</h2>
-                  </div>
-                  <span>{activePattern.meaning}</span>
-                </div>
-                {patternIsIsolated ? (
-                  <div className="pattern-isolation">
-                    <strong lang="fa" dir="rtl">{activePattern.form}</strong>
-                    <span>Learn this silhouette as one unit. Examples appear after three short exposures.</span>
-                    <div aria-label={`${progress.patternViews[activePattern.id] ?? 0} of 3 isolation exposures`}>
-                      {[0, 1, 2].map((step) => (
-                        <i
-                          className={step < (progress.patternViews[activePattern.id] ?? 0) ? "complete" : ""}
-                          key={step}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="pattern-examples">
-                      {activePattern.examples.map((example) => (
-                        <div key={example.word}>
-                          <strong lang="fa" dir="rtl">{highlightPattern(example.word, activePattern)}</strong>
-                          <small>{example.meaning}</small>
-                        </div>
-                      ))}
-                    </div>
-                    <p>Now spot the highlighted chunk inside complete, inflected words.</p>
-                  </>
-                )}
-              </aside>
             )}
           </section>
         )}
@@ -560,6 +673,7 @@ export default function App() {
                       onClick={() => {
                         setProgress((p) => ({ ...p, activeLevel: number }));
                         setQuestion(chooseQuestion({ ...progress, activeLevel: number }));
+                        setExerciseKind("word");
                         setTab("learn");
                       }}
                     >

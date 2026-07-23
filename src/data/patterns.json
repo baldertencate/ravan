@@ -64,9 +64,9 @@
     "level": 3,
     "position": "suffix",
     "examples": [
-      {"word": "کتابم", "meaning": "my book"},
-      {"word": "خانه‌ات", "meaning": "your house"},
-      {"word": "دوستش", "meaning": "his/her friend"}
+      {"word": "کتابم", "meaning": "my book", "chunk": "م"},
+      {"word": "خانه‌ات", "meaning": "your house", "chunk": "ات"},
+      {"word": "دوستش", "meaning": "his/her friend", "chunk": "ش"}
     ]
   },
   {
@@ -78,9 +78,9 @@
     "level": 3,
     "position": "suffix",
     "examples": [
-      {"word": "می‌روم", "meaning": "I go"},
-      {"word": "می‌روی", "meaning": "you go"},
-      {"word": "می‌رود", "meaning": "he/she goes"}
+      {"word": "می‌روم", "meaning": "I go", "chunk": "م"},
+      {"word": "می‌روی", "meaning": "you go", "chunk": "ی"},
+      {"word": "می‌رود", "meaning": "he/she goes", "chunk": "د"}
     ]
   },
   {
