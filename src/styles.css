@@ -61,6 +61,32 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .session-score strong { color: var(--ink); font-size: 22px; }
 .progress-track { height: 4px; background: #dedad0; border-radius: 99px; overflow: hidden; margin-bottom: 22px; }
 .progress-track span { height: 100%; display: block; background: var(--orange); border-radius: inherit; transition: width .35s ease; }
+.graduation-card {
+  display: grid; grid-template-columns: 46px 1fr auto; align-items: center; gap: 12px;
+  background: #ece7dc; border: 1px solid #ded7ca; border-radius: 17px;
+  padding: 10px 12px; margin: -8px 0 14px;
+}
+.graduation-card.ready {
+  background: #dfeadd; border-color: #9bb59f;
+  box-shadow: 0 10px 24px rgba(46, 93, 69, .09);
+}
+.streak-orb {
+  width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center;
+  justify-content: center; gap: 3px; background: #f8dfca; color: #a64e2c;
+}
+.streak-orb strong { font-size: 17px; }
+.graduation-card.ready .streak-orb { background: var(--green); color: white; }
+.graduation-copy { min-width: 0; display: grid; gap: 7px; }
+.graduation-copy > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.graduation-copy strong { font-size: 12px; }
+.graduation-copy span { color: var(--muted); font-size: 9px; }
+.graduation-track { height: 4px; background: rgba(46, 93, 69, .13); border-radius: 99px; overflow: hidden; }
+.graduation-track span { height: 100%; display: block; border-radius: inherit; background: var(--orange); transition: width .25s ease; }
+.graduation-card.ready .graduation-track span { background: var(--green); }
+.graduation-card > button {
+  border: 0; border-radius: 11px; padding: 10px 12px; background: var(--green);
+  color: white; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
+}
 
 .word-card {
   position: relative; min-height: 245px; padding: 20px;
@@ -179,6 +205,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .word-card { min-height: 220px; }
   .feedback { align-items: stretch; flex-direction: column; }
   .feedback button { width: 100%; }
+  .graduation-card { grid-template-columns: 42px 1fr; }
+  .graduation-card > button { grid-column: 1 / -1; width: 100%; }
   .bridge-card { grid-template-columns: 74px 1fr; gap: 14px; padding: 16px; }
   .bridge-ring { width: 70px; height: 70px; }
   .section-heading > span { display: none; }

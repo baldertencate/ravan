@@ -30,6 +30,7 @@ type Progress = {
   dayStreak: number;
   lastStudyDay: string;
   activeLevel: number;
+  highestLevel: number;
 };
 type Question = { word: Word; options: Word[]; mode: Mode };
 
@@ -53,6 +54,7 @@ const emptyProgress: Progress = {
   dayStreak: 0,
   lastStudyDay: "",
   activeLevel: 1,
+  highestLevel: 1,
 };
 
 function loadProgress(): Progress {
@@ -134,7 +136,10 @@ export default function App() {
 
   useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
 
-  const unlockedLevel = Math.min(5, 1 + Math.floor(progress.totalCorrect / 18));
+  const unlockedLevel = progress.highestLevel;
+  const graduationTarget = 15;
+  const streakToGraduate = Math.max(0, graduationTarget - progress.streak);
+  const canGraduate = progress.streak >= graduationTarget && progress.activeLevel < 5;
   const accuracy = progress.totalAnswers
     ? Math.round((progress.totalCorrect / progress.totalAnswers) * 100)
     : 0;
@@ -211,6 +216,23 @@ export default function App() {
     startedAt.current = Date.now();
   }
 
+  function graduate() {
+    if (!canGraduate) return;
+    const nextLevel = Math.min(5, progress.activeLevel + 1);
+    const nextProgress = {
+      ...progress,
+      activeLevel: nextLevel,
+      highestLevel: Math.max(progress.highestLevel, nextLevel),
+      streak: 0,
+    };
+    setProgress(nextProgress);
+    setQuestion(chooseQuestion(nextProgress));
+    setSelected(null);
+    setAnsweredCorrectly(null);
+    setSession({ correct: 0, answers: 0 });
+    startedAt.current = Date.now();
+  }
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (tab !== "learn") return;
@@ -258,6 +280,37 @@ export default function App() {
 
             <div className="progress-track" aria-label="Session progress">
               <span style={{ width: `${Math.min(100, session.answers * 10)}%` }} />
+            </div>
+
+            <div className={`graduation-card ${canGraduate ? "ready" : ""}`}>
+              <div className="streak-orb">
+                <Icon name="flame" />
+                <strong>{progress.streak}</strong>
+              </div>
+              <div className="graduation-copy">
+                <div>
+                  <strong>
+                    {progress.activeLevel === 5
+                      ? "Top-level reading streak"
+                      : canGraduate
+                        ? `Level ${progress.activeLevel + 1} is ready`
+                        : "Current answer streak"}
+                  </strong>
+                  <span>
+                    {progress.activeLevel === 5
+                      ? `${progress.streak} correct without a miss`
+                      : canGraduate
+                        ? "You earned the choice to move up."
+                        : `${streakToGraduate} more in a row to unlock Level ${progress.activeLevel + 1}`}
+                  </span>
+                </div>
+                {progress.activeLevel < 5 && (
+                  <div className="graduation-track" aria-label={`${progress.streak} of 15 correct answers`}>
+                    <span style={{ width: `${Math.min(100, (progress.streak / graduationTarget) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
+              {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
             </div>
 
             <article className={`word-card ${selected ? "answered" : ""}`}>
@@ -357,7 +410,15 @@ export default function App() {
                     >
                       <span className="level-number">{locked ? "·" : number}</span>
                       <span><strong>{level.title}</strong><small>{level.copy}</small></span>
-                      <span>{locked ? `${number * 18 - progress.totalCorrect} more` : active ? "Current" : "Practise"}</span>
+                      <span>
+                        {locked
+                          ? number === progress.activeLevel + 1
+                            ? `${streakToGraduate} streak left`
+                            : "Locked"
+                          : active
+                            ? "Current"
+                            : "Practise"}
+                      </span>
                     </button>
                   );
                 })}
