@@ -31,7 +31,6 @@ export default function Landing() {
         </a>
         <nav aria-label="Landing page">
           <a href="#how-it-works">How it works</a>
-          <a href="#about">About</a>
           <PracticeLink className="landing-nav-cta">Start practising</PracticeLink>
         </nav>
       </header>
@@ -40,15 +39,14 @@ export default function Landing() {
         <section className="landing-hero">
           <div className="landing-hero-copy">
             <span className="eyebrow">INTERACTIVE FARSI READING PRACTICE</span>
-            <h1>Turn Persian script into words you recognise.</h1>
+            <h1>Helpful practice for learning to read Farsi.</h1>
             <p>
-              Ravân helps people who are learning to read Farsi. It complements courses,
-              tutors, textbooks, and language apps with helpful interactive exercises that
-              track and grow your reading skills.
+              Ravân complements courses, tutors, textbooks, and language apps with interactive
+              exercises that track and grow your Persian reading skills.
             </p>
             <div className="landing-actions">
               <PracticeLink className="landing-primary">
-                Try a 2-minute lesson <span aria-hidden="true">→</span>
+                Try it now <span aria-hidden="true">→</span>
               </PracticeLink>
               <a className="landing-secondary" href="#how-it-works">See how it works</a>
             </div>
@@ -77,16 +75,6 @@ export default function Landing() {
             </div>
             <p><span aria-hidden="true">✦</span> Exercises adapt as your reading grows.</p>
           </div>
-        </section>
-
-        <section className="landing-intro" id="about">
-          <span className="eyebrow">PRACTICE THAT FILLS THE GAP</span>
-          <h2>Learning a language and learning to read it are different skills.</h2>
-          <p>
-            Lessons and vocabulary apps can teach you Farsi while leaving too little time for
-            the script itself. Ravân adds focused reading practice, so familiar sounds and
-            meanings become Persian words you can recognise on sight.
-          </p>
         </section>
 
         <section className="landing-method" id="how-it-works">

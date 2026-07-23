@@ -1093,37 +1093,24 @@ export default function App() {
               <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
             </div>
 
-            <div className="about-hero">
-              <span className="about-mark" lang="fa" dir="rtl">روان</span>
-              <div>
-                <span className="eyebrow">THE METHOD</span>
-                <h2>A bridge from sound to meaning</h2>
-                <p>Each word begins with a pronunciation match. Once that connection is secure, Ravân increasingly asks for meaning and revisits anything you miss.</p>
+            <div className="about-actions">
+              <button className="about-action primary" onClick={installApp} disabled={installed}>
+                <span aria-hidden="true">＋</span>
+                {installed ? "Added to Home Screen" : "Add to Home Screen"}
+              </button>
+              <button className="about-action" onClick={shareApp}>
+                <span aria-hidden="true">↗</span>
+                Share with friends
+              </button>
+            </div>
+            {showInstallHelp && !installed && (
+              <div className="install-help about-install-help">
+                <strong>Install from your browser</strong>
+                <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
+                <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
               </div>
-            </div>
-
-            <div className="about-method">
-              <div><b>1</b><strong>Sound to meaning</strong><span>Connect script to pronunciation, then to meaning.</span></div>
-              <div><b>2</b><strong>Pattern recognition</strong><span>Spot recurring chunks inside real words.</span></div>
-              <div><b>3</b><strong>Direct reading</strong><span>Gradually respond without Latin letters.</span></div>
-            </div>
-
-            <div className="settings-card">
-              <div className="settings-heading">
-                <div><span className="eyebrow">ON YOUR PHONE</span><h2>{installed ? "Ravân is installed" : "Keep Ravân one tap away"}</h2></div>
-                {!installed && <button className="small-action" onClick={installApp}>Add to Home Screen</button>}
-              </div>
-              <p>{installed ? "You’re using Ravân as a Home Screen app." : "Install the web app for a full-screen, app-like experience without an app store."}</p>
-              {showInstallHelp && !installed && (
-                <div className="install-help">
-                  <strong>Install from your browser</strong>
-                  <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
-                  <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
-                </div>
-              )}
-              <button className="secondary-action" onClick={shareApp}>Share Ravân</button>
-              {shareStatus && <span className="action-status">{shareStatus}</span>}
-            </div>
+            )}
+            {shareStatus && <div className="about-action-status">{shareStatus}</div>}
 
             <div className="settings-card">
               <div className="settings-heading">
@@ -1171,22 +1158,9 @@ export default function App() {
 
             <div className="settings-card">
               <div className="settings-heading">
-                <div><span className="eyebrow">PREFERENCES</span><h2>Make practice comfortable</h2></div>
+                <div><span className="eyebrow">SETTINGS</span><h2>Preferences</h2></div>
               </div>
               <div className="preference-list">
-                <div>
-                  <span><strong>Vowel marks</strong><small>Show teaching marks when available.</small></span>
-                  <button
-                    type="button"
-                    className="vowel-toggle settings-toggle"
-                    role="switch"
-                    aria-checked={showVowels}
-                    onClick={() => setShowVowels((visible) => !visible)}
-                  >
-                    <span className="toggle-track"><span /></span>
-                    {showVowels ? "On" : "Off"}
-                  </button>
-                </div>
                 <div>
                   <span><strong>Gentle haptics</strong><small>Short feedback taps on supported Android phones.</small></span>
                   <button
@@ -1202,21 +1176,6 @@ export default function App() {
                 </div>
               </div>
             </div>
-
-            <div className="privacy-card">
-              <div><span aria-hidden="true">✓</span><strong>Private by default</strong></div>
-              <p>Your learning progress and preferences stay in this browser on this device. Ravân has no account or advertising and uses anonymous, aggregate usage analytics to improve the experience.</p>
-            </div>
-
-            <button
-              className="replay-intro"
-              onClick={() => {
-                setOnboardingStep(0);
-                setShowOnboarding(true);
-              }}
-            >
-              Replay the introduction
-            </button>
           </section>
         )}
       </main>
