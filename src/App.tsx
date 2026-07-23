@@ -31,6 +31,10 @@ type PatternProgress = {
   correct: number;
   wrong: number;
 };
+type LevelMastery = {
+  currentStreak: number;
+  bestStreak: number;
+};
 type Progress = {
   words: Record<string, WordProgress>;
   totalCorrect: number;
@@ -43,6 +47,7 @@ type Progress = {
   activeLevel: number;
   highestLevel: number;
   patternStats: Record<string, PatternProgress>;
+  levelMastery: Record<string, LevelMastery>;
 };
 type Question = { word: Word; options: Word[]; mode: Mode };
 type Pattern = {
@@ -83,6 +88,7 @@ const ONBOARDING_KEY = "ravan-onboarding-v1";
 const REMINDER_KEY = "ravan-reminder-v1";
 const HAPTICS_KEY = "ravan-haptics-v1";
 const APP_URL = "https://baldertencate.github.io/ravan/app/";
+const LEVEL_UNLOCK_STREAK = 15;
 const LEVELS = [
   { title: "First shapes", copy: "Short, frequent words · ا ب د م ن" },
   { title: "Joining letters", copy: "Everyday connectors and core verbs" },
@@ -90,6 +96,32 @@ const LEVELS = [
   { title: "Daily reading", copy: "Common nouns, places, and descriptions" },
   { title: "Fluent recognition", copy: "Longer, less predictable vocabulary" },
 ];
+const MASTERY_STAGES = [
+  {
+    threshold: 10,
+    name: "Sprout",
+    image: `${import.meta.env.BASE_URL}mastery/sprout.png`,
+    nextCopy: "grow your first sprout",
+  },
+  {
+    threshold: 15,
+    name: "Bud",
+    image: `${import.meta.env.BASE_URL}mastery/bud.png`,
+    nextCopy: "grow a closed flower bud",
+  },
+  {
+    threshold: 20,
+    name: "Bloom",
+    image: `${import.meta.env.BASE_URL}mastery/bloom.png`,
+    nextCopy: "open your flower",
+  },
+  {
+    threshold: 25,
+    name: "Bouquet",
+    image: `${import.meta.env.BASE_URL}mastery/bouquet.png`,
+    nextCopy: "complete your bouquet",
+  },
+] as const;
 
 const emptyProgress: Progress = {
   words: {},
@@ -103,6 +135,7 @@ const emptyProgress: Progress = {
   activeLevel: 1,
   highestLevel: 1,
   patternStats: {},
+  levelMastery: {},
 };
 
 function loadProgress(): Progress {
@@ -111,16 +144,42 @@ function loadProgress(): Progress {
     if (!raw) return emptyProgress;
     const saved = { ...emptyProgress, ...JSON.parse(raw) } as Progress;
     if (
-      saved.streak >= 15 &&
+      saved.streak >= LEVEL_UNLOCK_STREAK &&
       saved.activeLevel < LEVELS.length &&
       saved.highestLevel <= saved.activeLevel
     ) {
       saved.highestLevel = saved.activeLevel + 1;
     }
+    if (!saved.levelMastery || !Object.keys(saved.levelMastery).length) {
+      const migrated: Record<string, LevelMastery> = {};
+      for (let level = 1; level < saved.highestLevel; level += 1) {
+        migrated[level] = { currentStreak: 0, bestStreak: LEVEL_UNLOCK_STREAK };
+      }
+      migrated[saved.activeLevel] = {
+        currentStreak: saved.streak,
+        bestStreak:
+          saved.highestLevel === 1
+            ? Math.max(saved.streak, saved.bestStreak)
+            : saved.streak,
+      };
+      saved.levelMastery = migrated;
+    }
     return saved;
   } catch {
     return emptyProgress;
   }
+}
+
+function levelMastery(progress: Progress, level = progress.activeLevel): LevelMastery {
+  return progress.levelMastery[level] ?? { currentStreak: 0, bestStreak: 0 };
+}
+
+function masteryStage(bestStreak: number) {
+  return [...MASTERY_STAGES].reverse().find((stage) => bestStreak >= stage.threshold) ?? null;
+}
+
+function nextMasteryStage(bestStreak: number) {
+  return MASTERY_STAGES.find((stage) => bestStreak < stage.threshold) ?? null;
 }
 
 function loadReminder(): ReminderSettings {
@@ -338,11 +397,18 @@ export default function App() {
   const displayWord = (word: Word) => showVowels ? word.vowelled : word.persian;
 
   const unlockedLevel = progress.highestLevel;
-  const graduationTarget = 15;
-  const streakToGraduate = Math.max(0, graduationTarget - progress.streak);
+  const activeMastery = levelMastery(progress);
+  const earnedMasteryStage = masteryStage(activeMastery.bestStreak);
+  const upcomingMasteryStage = nextMasteryStage(activeMastery.bestStreak);
+  const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
+  const masteryProgress = upcomingMasteryStage
+    ? Math.min(activeMastery.currentStreak, masteryTarget)
+    : masteryTarget;
+  const masteryRemaining = Math.max(0, masteryTarget - activeMastery.currentStreak);
+  const streakToGraduate = Math.max(0, LEVEL_UNLOCK_STREAK - activeMastery.currentStreak);
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
-    (progress.highestLevel > progress.activeLevel || progress.streak >= graduationTarget);
+    progress.highestLevel > progress.activeLevel;
   const accuracy = progress.totalAnswers
     ? Math.round((progress.totalCorrect / progress.totalAnswers) * 100)
     : 0;
@@ -392,7 +458,7 @@ export default function App() {
     if (
       !correct ||
       progress.activeLevel >= LEVELS.length ||
-      progress.streak !== graduationTarget - 1 ||
+      activeMastery.currentStreak !== LEVEL_UNLOCK_STREAK - 1 ||
       progress.highestLevel >= nextLevel
     ) {
       return;
@@ -545,10 +611,12 @@ export default function App() {
       const gap = current.lastStudyDay ? dayDifference(current.lastStudyDay, today) : 0;
       const dayStreak =
         current.lastStudyDay === today ? current.dayStreak : gap === 1 ? current.dayStreak + 1 : 1;
-      const streak = correct ? current.streak + 1 : 0;
+      const previousMastery = levelMastery(current);
+      const streak = correct ? previousMastery.currentStreak + 1 : 0;
+      const bestAtLevel = Math.max(previousMastery.bestStreak, streak);
       const highestLevel =
         correct &&
-        current.streak === graduationTarget - 1 &&
+        previousMastery.currentStreak === LEVEL_UNLOCK_STREAK - 1 &&
         current.activeLevel < LEVELS.length
           ? Math.max(current.highestLevel, current.activeLevel + 1)
           : current.highestLevel;
@@ -577,6 +645,13 @@ export default function App() {
         totalMs: current.totalMs + elapsed,
         streak,
         bestStreak: Math.max(current.bestStreak, streak),
+        levelMastery: {
+          ...current.levelMastery,
+          [current.activeLevel]: {
+            currentStreak: streak,
+            bestStreak: bestAtLevel,
+          },
+        },
         highestLevel,
         dayStreak,
         lastStudyDay: today,
@@ -616,10 +691,12 @@ export default function App() {
       const gap = current.lastStudyDay ? dayDifference(current.lastStudyDay, today) : 0;
       const dayStreak =
         current.lastStudyDay === today ? current.dayStreak : gap === 1 ? current.dayStreak + 1 : 1;
-      const streak = correct ? current.streak + 1 : 0;
+      const previousMastery = levelMastery(current);
+      const streak = correct ? previousMastery.currentStreak + 1 : 0;
+      const bestAtLevel = Math.max(previousMastery.bestStreak, streak);
       const highestLevel =
         correct &&
-        current.streak === graduationTarget - 1 &&
+        previousMastery.currentStreak === LEVEL_UNLOCK_STREAK - 1 &&
         current.activeLevel < LEVELS.length
           ? Math.max(current.highestLevel, current.activeLevel + 1)
           : current.highestLevel;
@@ -638,6 +715,13 @@ export default function App() {
         totalMs: current.totalMs + elapsed,
         streak,
         bestStreak: Math.max(current.bestStreak, streak),
+        levelMastery: {
+          ...current.levelMastery,
+          [current.activeLevel]: {
+            currentStreak: streak,
+            bestStreak: bestAtLevel,
+          },
+        },
         highestLevel,
         dayStreak,
         lastStudyDay: today,
@@ -668,7 +752,7 @@ export default function App() {
       ...progress,
       activeLevel: nextLevel,
       highestLevel: Math.max(progress.highestLevel, nextLevel),
-      streak: 0,
+      streak: levelMastery(progress, nextLevel).currentStreak,
     };
     setProgress(nextProgress);
     setQuestion(chooseQuestion(nextProgress, question.word.id));
@@ -863,12 +947,24 @@ export default function App() {
             aria-modal="true"
             aria-labelledby="level-unlock-title"
           >
-            <span className="level-unlock-spark" aria-hidden="true">✦</span>
+            <img
+              className="level-unlock-flower"
+              src={MASTERY_STAGES[1].image}
+              alt=""
+              aria-hidden="true"
+            />
             <span className="eyebrow">A NEW READING STEP</span>
             <h2 id="level-unlock-title">
               Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
             </h2>
             <p>Level {levelUnlockNotice} unlocked!</p>
+            <div className="level-unlock-growth">
+              <strong>Your flower is now a bud.</strong>
+              <span>
+                Stay on Level {progress.activeLevel} to keep growing it: five more correct answers
+                open the flower, and ten more make a bouquet.
+              </span>
+            </div>
             <div className="level-unlock-actions">
               <button className="primary-action" onClick={graduate} autoFocus>
                 Go to Level {levelUnlockNotice} <span>→</span>
@@ -877,7 +973,7 @@ export default function App() {
                 className="text-action"
                 onClick={() => setLevelUnlockNotice(null)}
               >
-                Stay on Level {progress.activeLevel}
+                Stay and grow my flower
               </button>
             </div>
           </section>
@@ -922,47 +1018,49 @@ export default function App() {
 
             <div className={`graduation-card ${canGraduate ? "ready" : ""}`}>
               <div className="current-level">
-                <span>LEVEL</span>
-                <strong>{progress.activeLevel}</strong>
+                <div>
+                  <span>LEVEL</span>
+                  <strong>{progress.activeLevel}</strong>
+                </div>
+                <img
+                  className={earnedMasteryStage ? "" : "not-earned"}
+                  src={earnedMasteryStage?.image ?? MASTERY_STAGES[0].image}
+                  alt={earnedMasteryStage ? `${earnedMasteryStage.name} mastery` : ""}
+                />
               </div>
               <div className="graduation-copy">
                 <div>
                   <strong>
-                    {progress.activeLevel === LEVELS.length
-                      ? "Top-level reading streak"
-                      : canGraduate
-                        ? `Level ${progress.activeLevel + 1} is ready`
-                        : "Current answer streak"}
+                    {earnedMasteryStage
+                      ? `${earnedMasteryStage.name} earned`
+                      : "Grow your first sprout"}
                   </strong>
                   <span>
-                    {progress.activeLevel === LEVELS.length
-                      ? `${progress.streak} correct without a miss`
-                      : canGraduate
-                        ? "You earned the choice to move up."
-                        : `${streakToGraduate} more in a row to unlock Level ${progress.activeLevel + 1}`}
+                    {upcomingMasteryStage
+                      ? `${masteryRemaining} more in a row to ${upcomingMasteryStage.nextCopy}${
+                          upcomingMasteryStage.threshold === LEVEL_UNLOCK_STREAK &&
+                          progress.activeLevel < LEVELS.length
+                            ? ` and unlock Level ${progress.activeLevel + 1}`
+                            : ""
+                        }`
+                      : "Your bouquet is fully grown at this level."}
                   </span>
                 </div>
-                {progress.activeLevel < LEVELS.length && (
-                  <div
-                    className="graduation-track"
-                    aria-label={`${
-                      canGraduate ? graduationTarget : progress.streak
-                    } of ${graduationTarget} correct answers`}
-                  >
-                    <span
-                      style={{
-                        width: `${
-                          canGraduate
-                            ? 100
-                            : Math.min(100, (progress.streak / graduationTarget) * 100)
-                        }%`,
-                      }}
-                    />
-                    <b>
-                      {canGraduate ? graduationTarget : progress.streak} / {graduationTarget} correct
-                    </b>
-                  </div>
-                )}
+                <div
+                  className="graduation-track"
+                  aria-label={`${masteryProgress} of ${masteryTarget} correct answers toward ${
+                    upcomingMasteryStage?.name ?? "Bouquet"
+                  } mastery`}
+                >
+                  <span
+                    style={{
+                      width: `${Math.min(100, (masteryProgress / masteryTarget) * 100)}%`,
+                    }}
+                  />
+                  <b>
+                    {masteryProgress} / {masteryTarget} correct
+                  </b>
+                </div>
               </div>
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
             </div>
@@ -1155,25 +1253,58 @@ export default function App() {
                 <div><span className="eyebrow">LEARNING PATH</span><h2>Five measured steps</h2></div>
                 <span>{WORDS.filter((w) => w.level <= unlockedLevel).length} words available</span>
               </div>
+              <div className="mastery-key" aria-label="Permanent flower mastery stages">
+                {MASTERY_STAGES.map((stage) => (
+                  <span key={stage.name}>
+                    <img src={stage.image} alt="" aria-hidden="true" />
+                    <small><b>{stage.threshold}</b> {stage.name}</small>
+                  </span>
+                ))}
+                <p>Your flower never shrinks. The bud at 15 unlocks the next level.</p>
+              </div>
               <div className="level-list">
                 {LEVELS.map((level, index) => {
                   const number = index + 1;
                   const locked = number > unlockedLevel;
                   const active = number === progress.activeLevel;
+                  const mastery = levelMastery(progress, number);
+                  const stage = masteryStage(mastery.bestStreak);
                   return (
                     <button
                       key={level.title}
                       className={`level-row ${active ? "active" : ""}`}
                       disabled={locked}
                       onClick={() => {
-                        setProgress((p) => ({ ...p, activeLevel: number }));
-                        setQuestion(chooseQuestion({ ...progress, activeLevel: number }));
+                        const nextProgress = {
+                          ...progress,
+                          activeLevel: number,
+                          streak: mastery.currentStreak,
+                        };
+                        setProgress(nextProgress);
+                        setQuestion(chooseQuestion(nextProgress));
                         setExerciseKind("word");
+                        setSelected(null);
+                        setAnsweredCorrectly(null);
+                        setShowModeHelp(false);
+                        setSession({ correct: 0, answers: 0 });
                         setTab("learn");
+                        startedAt.current = Date.now();
                       }}
                     >
                       <span className="level-number">{locked ? "·" : number}</span>
                       <span><strong>{level.title}</strong><small>{level.copy}</small></span>
+                      {!locked && (
+                        <span className={`level-mastery ${stage ? "" : "empty"}`}>
+                          <img
+                            src={stage?.image ?? MASTERY_STAGES[0].image}
+                            alt=""
+                            aria-hidden="true"
+                          />
+                          <small>
+                            {stage ? `${stage.name} · best ${mastery.bestStreak}` : "No flower yet"}
+                          </small>
+                        </span>
+                      )}
                       <span>
                         {locked
                           ? number === progress.activeLevel + 1

@@ -1,4 +1,4 @@
-const CACHE = "ravan-v3";
+const CACHE = "ravan-v4";
 const SHELL = [
   "./",
   "./app/",
@@ -8,6 +8,10 @@ const SHELL = [
   "./icon-512.png",
   "./icon-maskable-512.png",
   "./apple-touch-icon.png",
+  "./mastery/sprout.png",
+  "./mastery/bud.png",
+  "./mastery/bloom.png",
+  "./mastery/bouquet.png",
 ];
 
 self.addEventListener("install", (event) => {
