@@ -1,10 +1,10 @@
 {
-  "id": "/farsi/",
+  "id": "/ravan/app/",
   "name": "Ravân: Learn to Read Farsi",
   "short_name": "Ravân",
   "description": "Learn Persian script through short, adaptive Farsi reading practice.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/ravan/app/",
+  "scope": "/ravan/app/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
   "orientation": "portrait-primary",

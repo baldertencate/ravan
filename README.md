@@ -2,6 +2,9 @@
 
 A mobile-first progressive web app for learning to read Persian through adaptive multiple-choice practice.
 
+The public landing page explains how Ravân complements other Farsi-learning methods. The
+installable practice app lives separately at `/app/`.
+
 ## What it does
 
 - Builds from short, frequent letter patterns toward longer everyday words
@@ -15,6 +18,8 @@ A mobile-first progressive web app for learning to read Persian through adaptive
 - Uses gentle answer haptics on supported Android devices
 - Includes an About and Settings area for installation, reminders, sharing, vowel marks, haptics, privacy, and replaying onboarding
 - Works offline after the first visit
+- Uses privacy-conscious, aggregate Plausible events for product improvement; answer content,
+  reminder times, learning progress, and personal identifiers are never sent
 
 ## Native preparation
 
@@ -39,4 +44,15 @@ The workflow in `.github/workflows/deploy-pages.yml` builds and deploys every pu
 2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
 3. Push to `main`, then follow the deployment in the **Actions** tab.
 
-The app will be available at `https://baldertencate.github.io/farsi/`.
+The landing page will be available at `https://baldertencate.github.io/ravan/`, with the
+practice app at `https://baldertencate.github.io/ravan/app/`.
+
+## Analytics
+
+When Plausible is connected, production builds send a small set of explicit events such as practice
+starts, correct or incorrect answers, completed sets, installs, reminders, and level changes. Events
+contain only coarse context such as exercise type, level, and response-time range.
+
+Add `baldertencate.github.io` as a site in Plausible, copy its site-specific script URL, and save that
+URL as the GitHub Actions repository variable `PLAUSIBLE_SCRIPT_SRC`. Local builds do not load
+analytics unless `VITE_PLAUSIBLE_SCRIPT_SRC` is set.

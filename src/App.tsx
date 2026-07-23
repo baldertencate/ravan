@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
 import vowelData from "./data/vowels.json";
 import patternsData from "./data/patterns.json";
+import { trackEvent, trackSessionEvent } from "./analytics";
 
 type Mode = "meaning" | "transliteration";
 type Tab = "learn" | "journey" | "words" | "about";
@@ -80,7 +81,7 @@ const VOWEL_KEY = "ravan-show-vowels-v1";
 const ONBOARDING_KEY = "ravan-onboarding-v1";
 const REMINDER_KEY = "ravan-reminder-v1";
 const HAPTICS_KEY = "ravan-haptics-v1";
-const APP_URL = "https://baldertencate.github.io/farsi/";
+const APP_URL = "https://baldertencate.github.io/ravan/app/";
 const LEVELS = [
   { title: "First shapes", copy: "Short, frequent words · ا ب د م ن" },
   { title: "Joining letters", copy: "Everyday connectors and core verbs" },
@@ -162,6 +163,13 @@ function dayDifference(a: string, b: string) {
     (new Date(`${b}T12:00:00Z`).getTime() - new Date(`${a}T12:00:00Z`).getTime()) /
       86_400_000,
   );
+}
+
+function durationBucket(durationMs: number) {
+  if (durationMs < 2_000) return "under_2s";
+  if (durationMs < 5_000) return "2_to_5s";
+  if (durationMs < 10_000) return "5_to_10s";
+  return "over_10s";
 }
 
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
@@ -265,6 +273,10 @@ export default function App() {
   useEffect(() => localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder)), [reminder]);
   useEffect(() => localStorage.setItem(HAPTICS_KEY, String(haptics)), [haptics]);
   useEffect(() => {
+    trackSessionEvent("ravan-app-opened", "App Opened");
+    if (showOnboarding) trackSessionEvent("ravan-onboarding-started", "Onboarding Started");
+  }, [showOnboarding]);
+  useEffect(() => {
     function captureInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
@@ -273,6 +285,7 @@ export default function App() {
       setInstalled(true);
       setInstallPrompt(null);
       setShowInstallHelp(false);
+      trackEvent("App Installed");
     }
     window.addEventListener("beforeinstallprompt", captureInstallPrompt);
     window.addEventListener("appinstalled", markInstalled);
@@ -329,12 +342,15 @@ export default function App() {
 
   async function installApp() {
     if (installed) return;
+    trackEvent("Install Requested");
     if (!installPrompt) {
       setShowInstallHelp(true);
+      trackEvent("Install Instructions Shown");
       return;
     }
     await installPrompt.prompt();
     const choice = await installPrompt.userChoice;
+    trackEvent(choice.outcome === "accepted" ? "Install Accepted" : "Install Dismissed");
     if (choice.outcome === "accepted") setInstalled(true);
     setInstallPrompt(null);
   }
@@ -373,6 +389,7 @@ export default function App() {
     link.click();
     link.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    trackEvent("Reminder Created", { interval_days: reminder.interval });
   }
 
   function finishOnboarding() {
@@ -381,6 +398,7 @@ export default function App() {
     setShowOnboarding(false);
     setOnboardingStep(0);
     setTab("learn");
+    trackEvent("Onboarding Completed", { reminder_selected: reminder.enabled });
   }
 
   async function shareApp() {
@@ -393,9 +411,11 @@ export default function App() {
       if (navigator.share) {
         await navigator.share(shareData);
         setShareStatus("Shared");
+        trackEvent("App Shared", { method: "native_share" });
       } else {
         await navigator.clipboard.writeText(APP_URL);
         setShareStatus("Link copied");
+        trackEvent("App Shared", { method: "copy_link" });
       }
     } catch {
       setShareStatus("");
@@ -407,6 +427,22 @@ export default function App() {
     const correct = option.id === question.word.id;
     const elapsed = Math.min(30_000, Date.now() - startedAt.current);
     const today = dayKey();
+    trackSessionEvent("ravan-practice-started", "Practice Started", {
+      level: progress.activeLevel,
+    });
+    trackEvent(correct ? "Answer Correct" : "Answer Incorrect", {
+      exercise: "word",
+      mode: question.mode,
+      level: progress.activeLevel,
+      duration: durationBucket(elapsed),
+    });
+    if ((session.answers + 1) % 10 === 0) {
+      trackEvent("Practice Set Completed", {
+        answers: session.answers + 1,
+        correct: session.correct + (correct ? 1 : 0),
+        level: progress.activeLevel,
+      });
+    }
     hapticFeedback(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
@@ -467,6 +503,22 @@ export default function App() {
     const correct = option.id === patternExercise.pattern.id;
     const elapsed = Math.min(30_000, Date.now() - startedAt.current);
     const today = dayKey();
+    trackSessionEvent("ravan-practice-started", "Practice Started", {
+      level: progress.activeLevel,
+    });
+    trackEvent(correct ? "Answer Correct" : "Answer Incorrect", {
+      exercise: "pattern",
+      mode: patternExercise.stage,
+      level: progress.activeLevel,
+      duration: durationBucket(elapsed),
+    });
+    if ((session.answers + 1) % 10 === 0) {
+      trackEvent("Practice Set Completed", {
+        answers: session.answers + 1,
+        correct: session.correct + (correct ? 1 : 0),
+        level: progress.activeLevel,
+      });
+    }
     hapticFeedback(correct);
     setSelected(option.id);
     setAnsweredCorrectly(correct);
@@ -538,6 +590,7 @@ export default function App() {
     setShowModeHelp(false);
     setSession({ correct: 0, answers: 0 });
     startedAt.current = Date.now();
+    trackEvent("Level Entered", { level: nextLevel, source: "unlock" });
   }
 
   useEffect(() => {
@@ -587,11 +640,10 @@ export default function App() {
               <span className="eyebrow">PERSIAN SCRIPT, MADE APPROACHABLE</span>
               <div className="onboarding-word" lang="fa" dir="rtl">بخوان</div>
               <h1>Learn to read Farsi, one word at a time.</h1>
-              <p>Short, adaptive exercises train your eyes to recognize Persian words without becoming dependent on Latin letters.</p>
+              <p>Short, adaptive exercises train your eyes to recognize Persian words.</p>
               <div className="onboarding-benefits">
-                <span><b>01</b> Connect script to pronunciation</span>
+                <span><b>01</b> Connect script to pronunciation, then to meaning</span>
                 <span><b>02</b> Recognize useful visual patterns</span>
-                <span><b>03</b> Read directly for meaning</span>
               </div>
               <button className="primary-action" onClick={() => setOnboardingStep(1)}>
                 See how it works <span>→</span>
@@ -1037,8 +1089,8 @@ export default function App() {
           <section className="about-view">
             <div className="page-intro">
               <span className="eyebrow">ABOUT RAVÂN</span>
-              <h1>Learn to read Farsi—not lean on transliteration.</h1>
-              <p>Ravân is a calm, adaptive path from unfamiliar Persian shapes to words you recognize directly.</p>
+              <h1>Helpful practice for learning to read Farsi.</h1>
+              <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
             </div>
 
             <div className="about-hero">
@@ -1051,7 +1103,7 @@ export default function App() {
             </div>
 
             <div className="about-method">
-              <div><b>1</b><strong>Sound bridge</strong><span>Connect Persian spelling to pronunciation.</span></div>
+              <div><b>1</b><strong>Sound to meaning</strong><span>Connect script to pronunciation, then to meaning.</span></div>
               <div><b>2</b><strong>Pattern recognition</strong><span>Spot recurring chunks inside real words.</span></div>
               <div><b>3</b><strong>Direct reading</strong><span>Gradually respond without Latin letters.</span></div>
             </div>
@@ -1153,7 +1205,7 @@ export default function App() {
 
             <div className="privacy-card">
               <div><span aria-hidden="true">✓</span><strong>Private by default</strong></div>
-              <p>Your learning progress and preferences stay in this browser on this device. Ravân has no account, advertising, or tracking.</p>
+              <p>Your learning progress and preferences stay in this browser on this device. Ravân has no account or advertising and uses anonymous, aggregate usage analytics to improve the experience.</p>
             </div>
 
             <button
@@ -1171,7 +1223,14 @@ export default function App() {
 
       <nav className="bottom-nav" aria-label="Main navigation">
         {(["learn", "journey", "words", "about"] as Tab[]).map((item) => (
-          <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}>
+          <button
+            key={item}
+            className={tab === item ? "active" : ""}
+            onClick={() => {
+              setTab(item);
+              trackEvent("Tab Opened", { tab: item });
+            }}
+          >
             <Icon name={item} />
             <span>{item === "learn" ? "Practice" : item[0].toUpperCase() + item.slice(1)}</span>
           </button>

@@ -1,6 +1,7 @@
-const CACHE = "ravan-v2";
+const CACHE = "ravan-v3";
 const SHELL = [
   "./",
+  "./app/",
   "./manifest.webmanifest",
   "./icon-64.png",
   "./icon-192.png",
@@ -32,7 +33,10 @@ self.addEventListener("fetch", (event) => {
         const copy = response.clone();
         caches.open(CACHE).then((cache) => cache.put(event.request, copy));
         return response;
-      }).catch(() => caches.match("./")),
+      }).catch(() => {
+        const requestPath = new URL(event.request.url).pathname;
+        return caches.match(requestPath.includes("/app/") ? "./app/" : "./");
+      }),
     ),
   );
 });

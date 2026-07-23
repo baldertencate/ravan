@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://baldertencate.github.io/ravan/sitemap.xml

@@ -1,11 +1,17 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import Landing from "./Landing";
+import { initAnalytics } from "./analytics";
 import "./styles.css";
+
+initAnalytics();
+
+const isApp = window.location.pathname.replace(/\/+$/, "").endsWith("/app");
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    {isApp ? <App /> : <Landing />}
   </StrictMode>,
 );
 
