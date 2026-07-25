@@ -1303,15 +1303,7 @@ export default function App() {
         {tab === "learn" && (
           <section className="learn-view">
             <div className="session-row">
-              <div>
-                <span className="eyebrow">TODAY’S PRACTICE</span>
-                <h1>{exerciseKind === "pattern" ? "Spot the pattern" : "Read the word"}</h1>
-              </div>
-              <div className="session-tools">
-                <div className="session-score">
-                  <strong>{session.correct}</strong><span>/ {session.answers || 0}</span>
-                </div>
-              </div>
+              <h1>{exerciseKind === "pattern" ? "Spot the pattern" : "Read the word"}</h1>
             </div>
 
             <div className="progress-track" aria-label="Session progress">
