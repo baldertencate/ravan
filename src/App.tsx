@@ -119,6 +119,7 @@ const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
 const PHRASES = phrasesData as Word[];
 const ITEMS = [...WORDS, ...PHRASES];
 const PATTERNS = patternsData as Pattern[];
+const COMBINING_MARK = /\p{M}/u;
 const STORAGE_KEY = "ravan-progress-v1";
 const DEBUG_STORAGE_KEY = "ravan-debug-progress-v1";
 const VOWEL_KEY = "ravan-show-vowels-v1";
@@ -189,6 +190,38 @@ const MASTERY_STAGES = [
   },
 ] as const;
 const ALPHABET_BY_LETTER = new Map(PERSIAN_ALPHABET.map((letter) => [letter.letter, letter]));
+
+function highlightPattern(text: string, pattern: Pattern, exampleChunk?: string) {
+  const chunk = exampleChunk ?? pattern.chunk;
+  const visibleCharacters: { character: string; start: number }[] = [];
+  let originalOffset = 0;
+
+  for (const character of text) {
+    if (!COMBINING_MARK.test(character)) {
+      visibleCharacters.push({ character, start: originalOffset });
+    }
+    originalOffset += character.length;
+  }
+
+  const searchableText = visibleCharacters.map(({ character }) => character).join("");
+  const searchableChunk = [...chunk].filter((character) => !COMBINING_MARK.test(character)).join("");
+  const index =
+    pattern.position === "suffix"
+      ? searchableText.lastIndexOf(searchableChunk)
+      : searchableText.indexOf(searchableChunk);
+
+  if (index < 0) return text;
+
+  const start = visibleCharacters[index].start;
+  const end = visibleCharacters[index + searchableChunk.length]?.start ?? text.length;
+  return (
+    <>
+      {text.slice(0, start)}
+      <mark>{text.slice(start, end)}</mark>
+      {text.slice(end)}
+    </>
+  );
+}
 
 type ExerciseLetter = {
   original: string;
@@ -1064,19 +1097,6 @@ export default function App() {
         : "";
   const currentExerciseLetters = exerciseLetters(alphabetExerciseText);
   const currentBaseLetters = new Set(currentExerciseLetters.map(({ base }) => base));
-  function highlightPattern(text: string, pattern: Pattern, exampleChunk?: string) {
-    const chunk = exampleChunk ?? pattern.chunk;
-    const index = pattern.position === "suffix" ? text.lastIndexOf(chunk) : text.indexOf(chunk);
-    if (index < 0) return text;
-    return (
-      <>
-        {text.slice(0, index)}
-        <mark>{text.slice(index, index + chunk.length)}</mark>
-        {text.slice(index + chunk.length)}
-      </>
-    );
-  }
-
   function wrongAnswerHaptic() {
     if (!haptics || !("vibrate" in navigator)) return;
     navigator.vibrate(30);
@@ -1983,8 +2003,8 @@ export default function App() {
                     lang="fa"
                     dir="rtl"
                   >
-                    {!showVowels && matchedPattern
-                      ? highlightPattern(question.word.persian, matchedPattern)
+                    {matchedPattern
+                      ? highlightPattern(displayWord(question.word), matchedPattern)
                       : displayWord(question.word)}
                   </div>
                   {matchedPattern && (
