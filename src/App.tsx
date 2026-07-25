@@ -1561,7 +1561,7 @@ export default function App() {
                   از صدف دُری گزین گر عاقلی
                 </p>
                 <footer>
-                  <span>“You saw the outward form and missed the meaning; choose the pearl from the shell.”</span>
+                  <span>“If you are wise, choose the pearl from the shell.”</span>
                   <div className="literary-attribution">
                     <cite>Rumi</cite>
                     <small>13th-century Persian poet and Sufi mystic</small>
