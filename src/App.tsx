@@ -1533,7 +1533,6 @@ export default function App() {
 
           {onboardingStep === 1 && (
             <div className="onboarding-panel">
-              <span className="eyebrow">A BRIDGE YOU GRADUALLY LEAVE BEHIND</span>
               <h1>Built to outgrow transliteration.</h1>
               <p>Ravân starts by connecting Persian spelling to sound, then shifts toward English meaning as each word becomes familiar.</p>
               <span className="intro-list-label">HOW PRACTICE PROGRESSES</span>
@@ -1577,7 +1576,6 @@ export default function App() {
 
           {onboardingStep === 2 && (
             <div className="onboarding-panel">
-              <span className="eyebrow">READY WHEN YOU ARE</span>
               <h1>Make practice easy to return to.</h1>
               <p>Add Ravân to your Home Screen for an app-like experience. You can also create a recurring calendar reminder without making an account.</p>
 
