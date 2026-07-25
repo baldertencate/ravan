@@ -134,11 +134,12 @@ const MASTERY_STAGES = [
     image: `${import.meta.env.BASE_URL}mastery/bouquet.png`,
   },
 ] as const;
-const ALPHABET_LETTERS = new Set(PERSIAN_ALPHABET.map((letter) => letter.letter));
+const ALPHABET_BY_LETTER = new Map(PERSIAN_ALPHABET.map((letter) => [letter.letter, letter]));
 
 type ExerciseLetter = {
   original: string;
   base: string;
+  form: string;
 };
 
 function normalizeLetter(character: string) {
@@ -146,12 +147,40 @@ function normalizeLetter(character: string) {
 }
 
 function exerciseLetters(text: string): ExerciseLetter[] {
-  return [...text]
-    .map((character) => ({
+  const characters = [...text];
+  const letters = characters
+    .map((character, index) => ({
       original: character,
       base: normalizeLetter(character),
+      index,
     }))
-    .filter(({ base }) => ALPHABET_LETTERS.has(base));
+    .filter(({ base }) => ALPHABET_BY_LETTER.has(base));
+
+  const isBrokenBetween = (leftIndex: number, rightIndex: number) =>
+    characters
+      .slice(leftIndex + 1, rightIndex)
+      .some((character) => /[\u200c\s·.–—-]/u.test(character));
+
+  return letters.map(({ original, base, index }, letterIndex) => {
+    const letter = ALPHABET_BY_LETTER.get(base)!;
+    const previous = letters[letterIndex - 1];
+    const next = letters[letterIndex + 1];
+    const joinsPrevious =
+      Boolean(previous) &&
+      !isBrokenBetween(previous.index, index) &&
+      !ALPHABET_BY_LETTER.get(previous.base)?.nonJoining;
+    const joinsNext =
+      Boolean(next) && !isBrokenBetween(index, next.index) && !letter.nonJoining;
+    const form = joinsPrevious
+      ? joinsNext
+        ? `ـ${original}ـ`
+        : `ـ${original}`
+      : joinsNext
+        ? `${original}ـ`
+        : original;
+
+    return { original, base, form };
+  });
 }
 
 const emptyProgress: Progress = {
@@ -1769,12 +1798,11 @@ export default function App() {
               >
                 {currentExerciseLetters.map((item, index) => (
                   <span
-                    className="current-letter-item"
-                    lang="fa"
-                    dir="rtl"
+                    className="current-letter-unit"
                     key={`${item.original}-${index}`}
                   >
-                    {item.base}
+                    <b lang="fa" dir="rtl">{item.form}</b>
+                    {index < currentExerciseLetters.length - 1 && <i aria-hidden="true">·</i>}
                   </span>
                 ))}
               </div>

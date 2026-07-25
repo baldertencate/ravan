@@ -1056,14 +1056,20 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .exercise-alphabet-heading small { color: var(--muted); font-size: 8px; }
 .current-letter-sequence {
-  margin-top: 10px; display: flex; flex-wrap: wrap; gap: 7px;
+  min-height: 52px; margin-top: 10px; padding: 7px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
+  border: 1px solid rgba(46, 93, 69, .12); border-radius: 12px;
+  background: rgba(255, 253, 248, .78);
 }
-.current-letter-item {
-  width: 42px; height: 42px; flex: 0 0 auto; display: grid; place-items: center;
-  border: 1px solid rgba(46, 93, 69, .14); border-radius: 12px;
-  background: rgba(255, 253, 248, .82);
+.current-letter-unit {
+  direction: rtl; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
+}
+.current-letter-unit b {
   color: var(--green); font-family: "Noto Naskh Arabic", serif; font-size: 30px;
   font-weight: 600; line-height: 1; text-align: center;
+}
+.current-letter-unit i {
+  color: var(--orange); font-family: Georgia, serif; font-size: 16px; font-style: normal;
 }
 .alphabet-section-heading {
   margin: 24px 2px 11px; display: flex; align-items: end; justify-content: space-between; gap: 12px;
@@ -1491,9 +1497,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .exercise-alphabet-card { padding: 12px; border-radius: 15px; }
-  .current-letter-item {
-    width: 40px; height: 40px; font-size: 27px;
-  }
+  .current-letter-sequence { min-height: 48px; padding: 6px 10px; }
+  .current-letter-unit b { font-size: 27px; }
   .alphabet-section-heading { margin-top: 18px; }
   .alphabet-section-heading h2 { font-size: 22px; }
   .alphabet-grid { gap: 6px; }
