@@ -1738,8 +1738,7 @@ export default function App() {
             {levelUnlockNotice >= 4 && !donationSupported && (
               <div className="unlock-donation">
                 <p>
-                  This app is free. If you wish to make a voluntary donation to support its
-                  continued development,{" "}
+                  This app is free. To support its continued development,{" "}
                   <a
                     href={PAYPAL_DONATION_URL}
                     target="_blank"
@@ -1749,7 +1748,7 @@ export default function App() {
                     click here
                   </a>.
                 </p>
-                <small>Suggested $5 · choose any amount on PayPal</small>
+                <small>(suggested amount: $5)</small>
               </div>
             )}
             <div className="level-unlock-actions">
@@ -2586,7 +2585,7 @@ export default function App() {
                   rel="noreferrer"
                   onClick={() => openDonation("about")}
                 >
-                  {donationSupported ? "Make another voluntary donation" : "Make a voluntary donation"}
+                  Make a voluntary donation
                 </a>
                 <span> · $5 suggested, choose any amount</span>
               </p>
