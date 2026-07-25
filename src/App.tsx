@@ -1519,7 +1519,10 @@ export default function App() {
                 <p lang="fa" dir="rtl">قطره قطره جمع کن، دریا نگر</p>
                 <footer>
                   <span>“Gather it drop by drop; behold the sea.”</span>
-                  <cite>Shah Nematollah Vali</cite>
+                  <div className="literary-attribution">
+                    <cite>Shah Nematollah Vali</cite>
+                    <small>Persian Sufi poet and mystic</small>
+                  </div>
                 </footer>
               </blockquote>
               <button className="primary-action" onClick={() => setOnboardingStep(1)}>
@@ -1559,7 +1562,10 @@ export default function App() {
                 </p>
                 <footer>
                   <span>“You saw the outward form and missed the meaning; choose the pearl from the shell.”</span>
-                  <cite>Rumi</cite>
+                  <div className="literary-attribution">
+                    <cite>Rumi</cite>
+                    <small>13th-century Persian poet and Sufi mystic</small>
+                  </div>
                 </footer>
               </blockquote>
               <button className="primary-action" onClick={() => setOnboardingStep(2)}>
@@ -2164,7 +2170,16 @@ export default function App() {
             <div className="page-intro">
               <span className="eyebrow">YOUR JOURNEY</span>
               <h1>Reading is taking shape.</h1>
-              <p>Small, well-timed reviews turn unfamiliar marks into words you simply know.</p>
+              <blockquote className="literary-quote journey-literary-quote">
+                <p lang="fa" dir="rtl">دانه دانه است غله در انبار</p>
+                <footer>
+                  <span>“Grain by grain, the storehouse fills.”</span>
+                  <div className="literary-attribution">
+                    <cite>Saadi</cite>
+                    <small>13th-century Persian poet and master of prose</small>
+                  </div>
+                </footer>
+              </blockquote>
             </div>
             <div className="stats-grid">
               <div className="stat-card accent">
@@ -2461,7 +2476,10 @@ export default function App() {
                 </p>
                 <footer>
                   <span>“If your tree bears the fruit of knowledge, you can bring the azure heavens within reach.”</span>
-                  <cite>Naser Khosrow</cite>
+                  <div className="literary-attribution">
+                    <cite>Naser Khosrow</cite>
+                    <small>Poet, philosopher, and ardent promoter of the Persian language</small>
+                  </div>
                 </footer>
               </blockquote>
             </div>

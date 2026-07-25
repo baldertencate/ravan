@@ -303,6 +303,19 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+.literary-attribution {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 7px;
+}
+.literary-attribution small {
+  color: #9a9189;
+  font-family: "DM Sans", sans-serif;
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1.4;
+}
 
 .onboarding-shell {
   width: 100%;
@@ -942,6 +955,21 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .page-intro { max-width: 560px; margin: 10px 0 28px; }
 .page-intro p { color: var(--muted); line-height: 1.6; margin-top: 12px; }
 .page-intro.compact { margin-bottom: 20px; }
+.journey-literary-quote { margin-top: 12px; }
+.journey-literary-quote > p {
+  margin: 0;
+  color: #52665a;
+  font-family: "Noto Naskh Arabic", serif;
+  font-size: clamp(20px, 5vw, 24px);
+  font-weight: 600;
+  line-height: 1.55;
+}
+.journey-literary-quote footer { margin-top: 4px; }
+.journey-literary-quote footer > span {
+  font-family: Georgia, serif;
+  font-size: 9px;
+  font-style: italic;
+}
 .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stat-card { background: var(--paper); border: 1px solid #e4ded2; border-radius: 18px; padding: 17px; display: flex; flex-direction: column; }
 .stat-card.accent { background: var(--green); color: white; border-color: var(--green); }
