@@ -821,14 +821,21 @@ function choosePatternExercise(progress: Progress, excludePatternId?: string): P
       : fullPool;
   const weighted = available.map((pattern) => {
     const stat = progress.patternStats[pattern.id];
-    const contextPenalty = 1 + (stat?.contextSeen ?? 0) * 0.75;
+    const mastered = patternIsMastered(stat);
+    const accuracy = stat?.seen ? stat.correct / stat.seen : 0;
+    const baseWeight = !stat
+      ? 12
+      : mastered
+        ? Math.max(0.3, 1.5 / (1 + (stat.contextSeen ?? 0) * 0.5))
+        : (6 +
+            (stat.lastAnswerCorrect === false ? 8 : 0) +
+            (1 - accuracy) * 5) /
+          (1 + (stat.contextSeen ?? 0) * 0.35);
     return {
       pattern,
       weight:
-        (stat
-          ? (4 + stat.wrong * 3 + (1 - stat.correct / stat.seen) * 6) / contextPenalty
-          : 10) *
-        (pattern.level === progress.activeLevel && !patternIsMastered(stat) ? 3 : 1),
+        baseWeight *
+        (pattern.level === progress.activeLevel && !mastered ? 2.5 : 1),
     };
   });
   const total = weighted.reduce((sum, item) => sum + item.weight, 0);
@@ -845,6 +852,24 @@ function choosePatternExercise(progress: Progress, excludePatternId?: string): P
   const example = pattern.examples[(stat?.seen ?? 0) % pattern.examples.length];
   const distractors = shuffle(PATTERNS.filter((item) => item.id !== pattern.id)).slice(0, 3);
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
+}
+
+function shouldSchedulePatternExercise(progress: Progress, nextAnswerNumber: number) {
+  if (progress.activeLevel < 2 || progress.activeLevel >= 6) return false;
+
+  const relevantPatterns = PATTERNS.filter(
+    (pattern) => pattern.level <= progress.activeLevel,
+  );
+  if (!relevantPatterns.length) return false;
+
+  const recentlyMissed = relevantPatterns.some(
+    (pattern) => progress.patternStats[pattern.id]?.lastAnswerCorrect === false,
+  );
+  const stillLearning = relevantPatterns.some(
+    (pattern) => !patternIsMastered(progress.patternStats[pattern.id]),
+  );
+  const interval = recentlyMissed ? 3 : stillLearning ? 4 : 10;
+  return nextAnswerNumber % interval === 0;
 }
 
 function Icon({ name }: { name: Tab | "flame" | "clock" | "check" | "spark" }) {
@@ -1411,10 +1436,10 @@ export default function App() {
 
   function nextQuestion() {
     const nextProgress = { ...progress };
-    const patternNext =
-      progress.activeLevel >= 2 &&
-      progress.activeLevel < 6 &&
-      (session.answers + 1) % 3 === 0;
+    const patternNext = shouldSchedulePatternExercise(
+      nextProgress,
+      session.answers + 1,
+    );
     if (patternNext) {
       setPatternExercise(choosePatternExercise(nextProgress, patternExercise?.pattern.id));
       setExerciseKind("pattern");
@@ -1886,23 +1911,6 @@ export default function App() {
                       </b>
                     </div>
                   )}
-                  {upcomingMasteryStage &&
-                    upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
-                    activeEvidence.patternCount > 0 && (
-                      <div
-                        className={`pattern-count ${
-                          activeEvidence.masteredPatterns >= activeEvidence.patternCount
-                            ? "complete"
-                            : ""
-                        }`}
-                        aria-label={`${activeEvidence.masteredPatterns} of ${activeEvidence.patternCount} patterns mastered toward Bouquet`}
-                      >
-                        <span>Patterns mastered</span>
-                        <strong>
-                          {activeEvidence.masteredPatterns}/{activeEvidence.patternCount}
-                        </strong>
-                      </div>
-                    )}
                 </div>
               </div>
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}

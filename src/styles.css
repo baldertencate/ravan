@@ -644,14 +644,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .graduation-track.word-goal span { background: var(--green); }
 .graduation-card.ready .graduation-track span { background: var(--green); }
-.pattern-count {
-  min-height: 22px; padding: 3px 7px; display: flex; align-items: center; justify-content: space-between;
-  border: 1px solid rgba(183, 138, 54, .32); border-radius: 8px; background: rgba(255, 253, 248, .55);
-  color: #76591f; font-variant-numeric: tabular-nums;
-}
-.pattern-count span { color: inherit; font-size: 8px; font-weight: 700; }
-.pattern-count strong { color: inherit; font-size: 10px; }
-.pattern-count.complete { border-color: rgba(46, 93, 69, .24); color: var(--green-dark); }
 .graduation-card > button {
   border: 0; border-radius: 11px; padding: 10px 12px; background: var(--green);
   color: white; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
