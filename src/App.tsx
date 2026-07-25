@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
 import vowelData from "./data/vowels.json";
 import patternsData from "./data/patterns.json";
-import { LETTER_ALIASES, PERSIAN_ALPHABET, type PersianLetter } from "./data/alphabet";
+import { LETTER_ALIASES, PERSIAN_ALPHABET } from "./data/alphabet";
 import { trackEvent, trackSessionEvent } from "./analytics";
 
 type Mode = "meaning" | "transliteration";
@@ -134,14 +134,11 @@ const MASTERY_STAGES = [
     image: `${import.meta.env.BASE_URL}mastery/bouquet.png`,
   },
 ] as const;
-const ALPHABET_BY_LETTER = new Map(PERSIAN_ALPHABET.map((letter) => [letter.letter, letter]));
+const ALPHABET_LETTERS = new Set(PERSIAN_ALPHABET.map((letter) => letter.letter));
 
 type ExerciseLetter = {
   original: string;
   base: string;
-  letter: PersianLetter;
-  form: string;
-  position: "initial" | "medial" | "final" | "isolated";
 };
 
 function normalizeLetter(character: string) {
@@ -149,48 +146,12 @@ function normalizeLetter(character: string) {
 }
 
 function exerciseLetters(text: string): ExerciseLetter[] {
-  const characters = [...text];
-  const letterIndexes = characters
-    .map((character, index) => ({
+  return [...text]
+    .map((character) => ({
       original: character,
       base: normalizeLetter(character),
-      index,
     }))
-    .filter(({ base }) => ALPHABET_BY_LETTER.has(base));
-
-  const isBrokenBetween = (leftIndex: number, rightIndex: number) =>
-    characters
-      .slice(leftIndex + 1, rightIndex)
-      .some((character) => /[\u200c\s·.–—-]/u.test(character));
-
-  return letterIndexes.map(({ original, base, index }, letterIndex) => {
-    const letter = ALPHABET_BY_LETTER.get(base)!;
-    const previous = letterIndexes[letterIndex - 1];
-    const next = letterIndexes[letterIndex + 1];
-    const joinsPrevious =
-      Boolean(previous) &&
-      !isBrokenBetween(previous.index, index) &&
-      !ALPHABET_BY_LETTER.get(previous.base)?.nonJoining;
-    const joinsNext =
-      Boolean(next) && !isBrokenBetween(index, next.index) && !letter.nonJoining;
-    const position = joinsPrevious
-      ? joinsNext
-        ? "medial"
-        : "final"
-      : joinsNext
-        ? "initial"
-        : "isolated";
-    const form =
-      position === "medial"
-        ? `ـ${original}ـ`
-        : position === "final"
-          ? `ـ${original}`
-          : position === "initial"
-            ? `${original}ـ`
-            : original;
-
-    return { original, base, letter, form, position };
-  });
+    .filter(({ base }) => ALPHABET_LETTERS.has(base));
 }
 
 const emptyProgress: Progress = {
@@ -730,11 +691,6 @@ export default function App() {
         : "";
   const currentExerciseLetters = exerciseLetters(alphabetExerciseText);
   const currentBaseLetters = new Set(currentExerciseLetters.map(({ base }) => base));
-  const alphabetExerciseLabel =
-    exerciseKind === "pattern" && patternExercise?.stage === "isolation"
-      ? "IN THIS PATTERN"
-      : "IN THIS WORD";
-
   function highlightPattern(text: string, pattern: Pattern, exampleChunk?: string) {
     const chunk = exampleChunk ?? pattern.chunk;
     const index = pattern.position === "suffix" ? text.lastIndexOf(chunk) : text.indexOf(chunk);
@@ -1345,6 +1301,7 @@ export default function App() {
               <button className="primary-action" onClick={graduate} autoFocus>
                 Go to Level {levelUnlockNotice} <span>→</span>
               </button>
+              <span className="level-unlock-or">or</span>
               <button
                 className="text-action"
                 onClick={() => setLevelUnlockNotice(null)}
@@ -1800,13 +1757,10 @@ export default function App() {
 
             <section className="exercise-alphabet-card" aria-labelledby="exercise-alphabet-title">
               <div className="exercise-alphabet-heading">
-                <div>
-                  <span className="eyebrow" id="exercise-alphabet-title">
-                    {alphabetExerciseLabel}
-                  </span>
-                  <p>Follow the letters from right to left, just as they appear in practice.</p>
-                </div>
-                <strong lang="fa" dir="rtl">{alphabetExerciseText}</strong>
+                <span className="eyebrow" id="exercise-alphabet-title">
+                  IN THE CURRENT EXERCISE
+                </span>
+                <small>Right to left</small>
               </div>
               <div
                 className="current-letter-sequence"
@@ -1814,16 +1768,14 @@ export default function App() {
                 aria-label={`Letters in ${alphabetExerciseText}`}
               >
                 {currentExerciseLetters.map((item, index) => (
-                  <div className="current-letter-item" key={`${item.original}-${index}`}>
-                    <b lang="fa" dir="rtl">{item.form}</b>
-                    <span>
-                      <strong lang="fa" dir="rtl">{item.original}</strong>
-                      <small>
-                        {item.letter.sound} · {item.position}
-                        {item.original !== item.base ? ` · alphabet: ${item.base}` : ""}
-                      </small>
-                    </span>
-                  </div>
+                  <span
+                    className="current-letter-item"
+                    lang="fa"
+                    dir="rtl"
+                    key={`${item.original}-${index}`}
+                  >
+                    {item.base}
+                  </span>
                 ))}
               </div>
             </section>
