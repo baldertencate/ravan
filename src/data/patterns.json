@@ -8,9 +8,9 @@
     "level": 2,
     "position": "prefix",
     "examples": [
-      {"word": "می‌روم", "meaning": "I go / I am going"},
-      {"word": "می‌خواند", "meaning": "he/she reads"},
-      {"word": "می‌نویسیم", "meaning": "we write"}
+      {"word": "می‌روم", "meaning": "I am going"},
+      {"word": "می‌خواند", "meaning": "he/she is reading"},
+      {"word": "می‌نویسیم", "meaning": "we are writing"}
     ]
   },
   {
@@ -37,8 +37,13 @@
     "position": "prefix",
     "examples": [
       {"word": "نمی‌دانم", "meaning": "I don't know"},
-      {"word": "نمی‌رود", "meaning": "he/she doesn't go"},
-      {"word": "نمی‌خوانیم", "meaning": "we don't read"}
+      {"word": "نمی‌خوانیم", "meaning": "we aren't reading"},
+      {"word": "نمی‌روم", "meaning": "I am not going"},
+      {"word": "نمی‌روی", "meaning": "you are not going"},
+      {"word": "نمی‌رود", "meaning": "he/she is not going"},
+      {"word": "نمی‌رویم", "meaning": "we are not going"},
+      {"word": "نمی‌روید", "meaning": "you are not going (plural/formal)"},
+      {"word": "نمی‌روند", "meaning": "they are not going"}
     ]
   },
   {
@@ -57,30 +62,44 @@
   },
   {
     "id": "p-possessive",
-    "form": "ـم / ـت / ـش",
+    "form": "ـم / ـت / ـش\nـمان / ـتان / ـشان",
     "chunk": "ش",
     "name": "Possessive endings",
-    "meaning": "Small endings can mean my, your, or his/her.",
+    "meaning": "Small endings can mean my, your, his/her, our, or their.",
     "level": 3,
     "position": "suffix",
     "examples": [
       {"word": "کتابم", "meaning": "my book", "chunk": "م"},
       {"word": "خانه‌ات", "meaning": "your house", "chunk": "ات"},
-      {"word": "دوستش", "meaning": "his/her friend", "chunk": "ش"}
+      {"word": "دوستش", "meaning": "his/her friend", "chunk": "ش"},
+      {"word": "کتابمان", "meaning": "our book", "chunk": "مان"},
+      {"word": "خانه‌تان", "meaning": "your house (plural/formal)", "chunk": "تان"},
+      {"word": "دوستشان", "meaning": "their friend", "chunk": "شان"}
     ]
   },
   {
     "id": "p-endings",
-    "form": "ـم / ـی / ـد",
+    "form": "ـم / ـی / ـد\nـیم / ـید / ـند",
     "chunk": "م",
     "name": "Verb person endings",
     "meaning": "The ending tells you who is doing the action.",
     "level": 3,
     "position": "suffix",
     "examples": [
-      {"word": "می‌روم", "meaning": "I go", "chunk": "م"},
-      {"word": "می‌روی", "meaning": "you go", "chunk": "ی"},
-      {"word": "می‌رود", "meaning": "he/she goes", "chunk": "د"}
+      {"word": "می‌روم", "meaning": "I am going", "chunk": "م"},
+      {"word": "می‌روی", "meaning": "you are going", "chunk": "ی"},
+      {"word": "می‌رود", "meaning": "he/she is going", "chunk": "د"},
+      {"word": "می‌رویم", "meaning": "we are going", "chunk": "یم"},
+      {"word": "می‌روید", "meaning": "you are going (plural/formal)", "chunk": "ید"},
+      {"word": "می‌روند", "meaning": "they are going", "chunk": "ند"},
+      {"word": "خوردم", "meaning": "I ate", "chunk": "م"},
+      {"word": "خوردی", "meaning": "you ate", "chunk": "ی"},
+      {"word": "خوردیم", "meaning": "we ate", "chunk": "یم"},
+      {"word": "خوردید", "meaning": "you ate (plural/formal)", "chunk": "ید"},
+      {"word": "خوردند", "meaning": "they ate", "chunk": "ند"},
+      {"word": "نمی‌روم", "meaning": "I am not going", "chunk": "م"},
+      {"word": "نمی‌رویم", "meaning": "we are not going", "chunk": "یم"},
+      {"word": "نمی‌روند", "meaning": "they are not going", "chunk": "ند"}
     ]
   },
   {
