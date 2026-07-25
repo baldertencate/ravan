@@ -53,6 +53,12 @@ type LevelMastery = {
   bestStreak: number;
   earnedThreshold: number;
 };
+type WordBoundaryProgress = {
+  mastered: boolean;
+  needsRefresh: boolean;
+  correctPhraseIds: string[];
+  exercisesSinceCheck: number;
+};
 type MasteryCelebration = {
   level: number;
   threshold: number;
@@ -70,6 +76,7 @@ type Progress = {
   highestLevel: number;
   patternStats: Record<string, PatternProgress>;
   levelMastery: Record<string, LevelMastery>;
+  wordBoundaries: WordBoundaryProgress;
 };
 type QuestionOption = {
   id: string;
@@ -120,6 +127,9 @@ const REMINDER_KEY = "ravan-reminder-v1";
 const HAPTICS_KEY = "ravan-haptics-v1";
 const APP_URL = "https://baldertencate.github.io/ravan/app/";
 const LEVEL_UNLOCK_STREAK = 15;
+const WORD_BOUNDARY_INITIAL_GOAL = 5;
+const WORD_BOUNDARY_REFRESH_GOAL = 3;
+const WORD_BOUNDARY_CHECK_INTERVAL = 12;
 const LEVELS = [
   { title: "First word shapes", copy: "Very short, high-frequency words" },
   { title: "Common word shapes", copy: "Connectors, questions, and varied joining forms" },
@@ -227,6 +237,12 @@ const emptyProgress: Progress = {
   highestLevel: 1,
   patternStats: {},
   levelMastery: {},
+  wordBoundaries: {
+    mastered: false,
+    needsRefresh: false,
+    correctPhraseIds: [],
+    exercisesSinceCheck: 0,
+  },
 };
 
 function freshProgress(): Progress {
@@ -235,6 +251,10 @@ function freshProgress(): Progress {
     words: {},
     patternStats: {},
     levelMastery: {},
+    wordBoundaries: {
+      ...emptyProgress.wordBoundaries,
+      correctPhraseIds: [],
+    },
     activeLevel: DEBUG_START_LEVEL ?? 1,
     highestLevel: DEBUG_MODE ? LEVELS.length : 1,
   };
@@ -244,7 +264,33 @@ function loadProgress(): Progress {
   try {
     const raw = localStorage.getItem(ACTIVE_STORAGE_KEY);
     if (!raw) return freshProgress();
-    const saved = { ...emptyProgress, ...JSON.parse(raw) } as Progress;
+    const parsed = JSON.parse(raw) as Partial<Progress>;
+    const saved = {
+      ...emptyProgress,
+      ...parsed,
+      words: parsed.words ?? {},
+      patternStats: parsed.patternStats ?? {},
+      levelMastery: parsed.levelMastery ?? {},
+      wordBoundaries: {
+        ...emptyProgress.wordBoundaries,
+        ...parsed.wordBoundaries,
+        correctPhraseIds: parsed.wordBoundaries?.correctPhraseIds ?? [],
+      },
+    } as Progress;
+    if (!parsed.wordBoundaries) {
+      const correctPhraseIds = PHRASES.filter(
+        (phrase) => (saved.words[phrase.id]?.segmentationCorrect ?? 0) >= 1,
+      ).map((phrase) => phrase.id);
+      const mastered = correctPhraseIds.length >= WORD_BOUNDARY_INITIAL_GOAL;
+      saved.wordBoundaries = {
+        mastered,
+        needsRefresh: false,
+        correctPhraseIds: mastered
+          ? []
+          : correctPhraseIds.slice(0, WORD_BOUNDARY_INITIAL_GOAL),
+        exercisesSinceCheck: 0,
+      };
+    }
     if (DEBUG_MODE) {
       saved.highestLevel = LEVELS.length;
       if (DEBUG_START_LEVEL) saved.activeLevel = DEBUG_START_LEVEL;
@@ -318,11 +364,65 @@ function wordIsMastered(stat?: WordProgress) {
   );
 }
 
-function itemIsMastered(item: Word, stat?: WordProgress) {
+function itemIsMastered(_item: Word, stat?: WordProgress) {
+  return wordIsMastered(stat);
+}
+
+function wordBoundaryPracticeNeeded(progress: Progress) {
+  const boundary = progress.wordBoundaries;
   return (
-    wordIsMastered(stat) &&
-    (item.kind !== "phrase" || (stat?.segmentationCorrect ?? 0) >= 1)
+    progress.activeLevel === 6 &&
+    (!boundary.mastered ||
+      boundary.needsRefresh ||
+      boundary.exercisesSinceCheck >= WORD_BOUNDARY_CHECK_INTERVAL)
   );
+}
+
+function recordWordBoundaryAnswer(
+  boundary: WordBoundaryProgress,
+  phraseId: string,
+  correct: boolean,
+): WordBoundaryProgress {
+  if (!correct) {
+    return {
+      ...boundary,
+      needsRefresh: boundary.mastered,
+      correctPhraseIds: [],
+      exercisesSinceCheck: 0,
+    };
+  }
+
+  if (!boundary.mastered) {
+    const correctPhraseIds = boundary.correctPhraseIds.includes(phraseId)
+      ? boundary.correctPhraseIds
+      : [...boundary.correctPhraseIds, phraseId];
+    const mastered = correctPhraseIds.length >= WORD_BOUNDARY_INITIAL_GOAL;
+    return {
+      mastered,
+      needsRefresh: false,
+      correctPhraseIds: mastered ? [] : correctPhraseIds,
+      exercisesSinceCheck: 0,
+    };
+  }
+
+  if (boundary.needsRefresh) {
+    const correctPhraseIds = boundary.correctPhraseIds.includes(phraseId)
+      ? boundary.correctPhraseIds
+      : [...boundary.correctPhraseIds, phraseId];
+    const refreshed = correctPhraseIds.length >= WORD_BOUNDARY_REFRESH_GOAL;
+    return {
+      ...boundary,
+      needsRefresh: !refreshed,
+      correctPhraseIds: refreshed ? [] : correctPhraseIds,
+      exercisesSinceCheck: 0,
+    };
+  }
+
+  return {
+    ...boundary,
+    correctPhraseIds: [],
+    exercisesSinceCheck: 0,
+  };
 }
 
 function patternIsMastered(stat?: PatternProgress) {
@@ -512,31 +612,90 @@ function phraseSegmentationOptions(item: Word): QuestionOption[] {
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const currentLevelPool = ITEMS.filter((word) => word.level === progress.activeLevel);
   const reviewPool = ITEMS.filter((word) => word.level < progress.activeLevel);
-  const growingWords = currentLevelPool.filter(
+  if (wordBoundaryPracticeNeeded(progress)) {
+    const boundary = progress.wordBoundaries;
+    const completedThisRun = new Set(boundary.correctPhraseIds);
+    const freshExamples = PHRASES.filter((phrase) => !completedThisRun.has(phrase.id));
+    const candidates = freshExamples.length ? freshExamples : PHRASES;
+    const withoutPrevious =
+      excludeWordId && candidates.length > 1
+        ? candidates.filter((phrase) => phrase.id !== excludeWordId)
+        : candidates;
+    const target =
+      shuffle(withoutPrevious.slice(0, Math.min(6, withoutPrevious.length)))[0] ??
+      withoutPrevious[0];
+    return { word: target, options: phraseSegmentationOptions(target), mode: "segmentation" };
+  }
+
+  const allGrowingWords = currentLevelPool.filter(
     (word) => progress.words[word.id] && !itemIsMastered(word, progress.words[word.id]),
   );
+  const growingWords =
+    progress.activeLevel === 6
+      ? [...allGrowingWords]
+          .sort((a, b) => {
+            const aProgress = progress.words[a.id];
+            const bProgress = progress.words[b.id];
+            const aSteps =
+              Number((aProgress?.transliterationCorrect ?? 0) >= 1) +
+              Number((aProgress?.meaningCorrect ?? 0) >= 1);
+            const bSteps =
+              Number((bProgress?.transliterationCorrect ?? 0) >= 1) +
+              Number((bProgress?.meaningCorrect ?? 0) >= 1);
+            return bSteps - aSteps || a.rank - b.rank;
+          })
+          .slice(0, 3)
+      : allGrowingWords;
   const unseenWords = currentLevelPool
     .filter((word) => !progress.words[word.id])
     .sort((a, b) => a.rank - b.rank);
+  const learningWaveSize = progress.activeLevel === 6 ? 3 : 8;
   const learningWave = [
     ...growingWords,
-    ...unseenWords.slice(0, Math.max(0, 8 - growingWords.length)),
+    ...unseenWords.slice(0, Math.max(0, learningWaveSize - growingWords.length)),
   ];
   const masteredCurrentWords = currentLevelPool.filter((word) =>
     itemIsMastered(word, progress.words[word.id]),
   );
   const focusedCurrentPool =
-    learningWave.length && (masteredCurrentWords.length === 0 || Math.random() < 0.85)
+    learningWave.length &&
+    (progress.activeLevel === 6 ||
+      masteredCurrentWords.length === 0 ||
+      Math.random() < 0.85)
       ? learningWave
       : masteredCurrentWords.length
         ? masteredCurrentWords
         : currentLevelPool;
+  const dueReviewPool = reviewPool.filter((word) => {
+    const stat = progress.words[word.id];
+    return stat && stat.dueAt <= Date.now();
+  });
+  const dueMasteredPhrases = masteredCurrentWords.filter((word) => {
+    const stat = progress.words[word.id];
+    return progress.activeLevel === 6 && stat && stat.dueAt <= Date.now();
+  });
+  const levelSixDuePool = [...dueMasteredPhrases, ...dueReviewPool];
+  const phraseSproutTarget = requiredItemsForStage(
+    currentLevelPool.length,
+    MASTERY_STAGES[0].coverage,
+  );
+  const levelSixReviewDue =
+    progress.activeLevel === 6 &&
+    masteredCurrentWords.length >= phraseSproutTarget &&
+    levelSixDuePool.length > 0 &&
+    progress.totalAnswers % 12 === 11;
   const fullPool =
     DEBUG_MODE ||
     reviewPool.length === 0 ||
-    Math.random() < (progress.activeLevel === 6 ? 0.92 : 0.78)
+    (progress.activeLevel === 6
+      ? !levelSixReviewDue
+      : Math.random() < 0.78)
       ? focusedCurrentPool
-      : reviewPool;
+      : progress.activeLevel === 6 && levelSixDuePool.length
+        ? levelSixDuePool
+        : dueReviewPool.length
+          ? dueReviewPool
+        : reviewPool;
   const pool =
     excludeWordId && fullPool.length > 1
       ? fullPool.filter((word) => word.id !== excludeWordId)
@@ -547,10 +706,18 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
     if (!stat) return { word, weight: 15 + Math.max(0, 160 - word.rank) / 40 };
     const accuracy = stat.correct / Math.max(1, stat.seen);
     const overdue = Math.max(0, now - stat.dueAt) / 3_600_000;
+    const levelSixCompletionBoost =
+      progress.activeLevel === 6 &&
+      word.level === 6 &&
+      !itemIsMastered(word, stat) &&
+      stat.transliterationCorrect >= 1
+        ? 10
+        : 0;
     return {
       word,
       weight:
         (itemIsMastered(word, stat) ? 1.5 : 9) +
+        levelSixCompletionBoost +
         (1 - accuracy) * 8 +
         Math.min(10, overdue),
     };
@@ -566,20 +733,13 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const mastery = stat ? stat.correct / Math.max(3, stat.seen) : 0;
   const globalFade = Math.min(0.88, progress.totalCorrect / 140);
   const meaningChance = Math.max(0.22, Math.min(0.95, 0.25 + mastery * 0.5 + globalFade));
-  const hasCorrectSegmentation =
-    target.kind !== "phrase" || (stat?.segmentationCorrect ?? 0) >= 1;
   const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
   const needsMeaningEvidence = (stat?.meaningCorrect ?? 0) < 1;
-  const mode: Mode = !hasCorrectSegmentation
-    ? "segmentation"
-    : !hasCorrectTransliteration
+  const mode: Mode = !hasCorrectTransliteration
       ? "transliteration"
       : needsMeaningEvidence || Math.random() < meaningChance
         ? "meaning"
         : "transliteration";
-  if (mode === "segmentation") {
-    return { word: target, options: phraseSegmentationOptions(target), mode };
-  }
   const answerPool =
     target.kind === "phrase"
       ? PHRASES
@@ -790,6 +950,23 @@ export default function App() {
   const unlockedLevel = progress.highestLevel;
   const activeMastery = levelMastery(progress);
   const activeEvidence = levelEvidence(progress);
+  const wordBoundaryStatus = !progress.wordBoundaries.mastered
+    ? {
+        label: "Learning word boundaries",
+        value: `${progress.wordBoundaries.correctPhraseIds.length}/${WORD_BOUNDARY_INITIAL_GOAL}`,
+        complete: false,
+      }
+    : progress.wordBoundaries.needsRefresh
+      ? {
+          label: "Boundary refresher",
+          value: `${progress.wordBoundaries.correctPhraseIds.length}/${WORD_BOUNDARY_REFRESH_GOAL}`,
+          complete: false,
+        }
+      : {
+          label: "Word boundaries",
+          value: "✓ Learned",
+          complete: true,
+        };
   const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
   const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
@@ -1064,6 +1241,17 @@ export default function App() {
       const previousMastery = levelMastery(current);
       const streak = correct ? previousMastery.currentStreak + 1 : 0;
       const bestAtLevel = Math.max(previousMastery.bestStreak, streak);
+      const wordBoundaries =
+        current.activeLevel !== 6
+          ? current.wordBoundaries
+          : question.mode === "segmentation"
+            ? recordWordBoundaryAnswer(current.wordBoundaries, question.word.id, correct)
+            : current.wordBoundaries.mastered && !current.wordBoundaries.needsRefresh
+              ? {
+                  ...current.wordBoundaries,
+                  exercisesSinceCheck: current.wordBoundaries.exercisesSinceCheck + 1,
+                }
+              : current.wordBoundaries;
       return {
         ...current,
         words: {
@@ -1073,12 +1261,12 @@ export default function App() {
             correct: previous.correct + (correct ? 1 : 0),
             wrong: previous.wrong + (correct ? 0 : 1),
             transliterationCorrect:
-              !correct
+              !correct && question.mode !== "segmentation"
                 ? 0
                 : (previous.transliterationCorrect ?? 0) +
                   (correct && question.mode === "transliteration" ? 1 : 0),
             meaningCorrect:
-              !correct
+              !correct && question.mode !== "segmentation"
                 ? 0
                 : question.mode === "meaning"
                   ? (previous.meaningCorrect ?? 0) + 1
@@ -1088,7 +1276,8 @@ export default function App() {
                 ? 0
                 : (previous.segmentationCorrect ?? 0) +
                   (correct && question.mode === "segmentation" ? 1 : 0),
-            lastAnswerCorrect: correct,
+            lastAnswerCorrect:
+              question.mode === "segmentation" ? previous.lastAnswerCorrect : correct,
             interval,
             dueAt: Date.now() + interval * 86_400_000,
             avgMs: previous.seen
@@ -1101,6 +1290,7 @@ export default function App() {
         totalMs: current.totalMs + elapsed,
         streak,
         bestStreak: Math.max(current.bestStreak, streak),
+        wordBoundaries,
         levelMastery: {
           ...current.levelMastery,
           [current.activeLevel]: {
@@ -1634,6 +1824,17 @@ export default function App() {
                       </b>
                     </div>
                   )}
+                  {progress.activeLevel === 6 && (
+                    <div
+                      className={`pattern-count boundary-count ${
+                        wordBoundaryStatus.complete ? "complete" : ""
+                      }`}
+                      aria-label={`${wordBoundaryStatus.label}: ${wordBoundaryStatus.value}`}
+                    >
+                      <span>{wordBoundaryStatus.label}</span>
+                      <strong>{wordBoundaryStatus.value}</strong>
+                    </div>
+                  )}
                   {upcomingMasteryStage &&
                     upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
                     activeEvidence.patternCount > 0 && (
@@ -2139,14 +2340,11 @@ export default function App() {
               ) : recentItems.map((word) => {
                 const stat = progress.words[word.id];
                 const accuracy = Math.round((stat.correct / stat.seen) * 100);
-                const masteryStepCount = word.kind === "phrase" ? 3 : 2;
+                const masteryStepCount = 2;
                 const masterySteps =
                   stat.lastAnswerCorrect === false
                     ? 0
-                    : (word.kind === "phrase"
-                        ? Number((stat.segmentationCorrect ?? 0) >= 1)
-                        : 0) +
-                      Number(stat.transliterationCorrect >= 1) +
+                    : Number(stat.transliterationCorrect >= 1) +
                       Number((stat.meaningCorrect ?? 0) >= 1);
                 const masteryScore = (masterySteps / masteryStepCount) * 100;
                 return (
