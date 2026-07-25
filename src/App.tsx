@@ -1709,20 +1709,6 @@ export default function App() {
                       )}
                     </div>
                   )}
-                  {showReadingHelp && question.word.readingHelp && (
-                    <div className="reading-explainer" id="reading-help">
-                      <button
-                        type="button"
-                        onClick={() => setShowReadingHelp(false)}
-                        aria-label="Close reading hint"
-                      >
-                        ×
-                      </button>
-                      <b lang="fa" dir="rtl">{question.word.readingHelp.markedPersian}</b>
-                      <strong>{question.word.readingHelp.label}</strong>
-                      <span>{question.word.readingHelp.explanation}</span>
-                    </div>
-                  )}
                   <div
                     className={`persian-word ${
                       question.word.kind === "phrase" ? "phrase" : ""
@@ -1734,24 +1720,6 @@ export default function App() {
                       ? highlightPattern(question.word.persian, matchedPattern)
                       : displayWord(question.word)}
                   </div>
-                  {question.word.readingHelp &&
-                    (question.mode === "transliteration" || selected) && (
-                    <button
-                      type="button"
-                      className={`reading-help-trigger ${
-                        !progress.words[question.word.id] ? "new" : ""
-                      }`}
-                      onClick={() => {
-                        setShowReadingHelp((visible) => !visible);
-                        setShowModeHelp(false);
-                      }}
-                      aria-expanded={showReadingHelp}
-                      aria-controls="reading-help"
-                    >
-                      {!progress.words[question.word.id] && <span>NEW</span>}
-                      {question.word.readingHelp.label}
-                    </button>
-                    )}
                   {matchedPattern && (
                     <div className="word-pattern-note">
                       <span lang="fa" dir="rtl">{matchedPattern.form}</span>
@@ -1867,23 +1835,52 @@ export default function App() {
 
             {selected && (
               <div className={`feedback ${answeredCorrectly ? "success" : "retry"}`}>
-                <div>
+                <div className="feedback-copy">
                   <strong>{answeredCorrectly ? "That’s it." : "Not quite — keep this one close."}</strong>
-                  <span>
-                    {exerciseKind === "item" ? (
-                      <>
-                        <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
-                        {" · "}{transliterationLabel(question.word)} · {question.word.meaning}
-                      </>
-                    ) : patternExercise ? (
-                      <>
-                        <b lang="fa" dir="rtl">{patternExercise.pattern.form}</b>
-                        {" · "}{patternExercise.pattern.name} · {patternExercise.pattern.meaning}
-                      </>
-                    ) : null}
-                  </span>
+                  <div className="feedback-answer-line">
+                    <span>
+                      {exerciseKind === "item" ? (
+                        <>
+                          <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
+                          {" · "}{transliterationLabel(question.word)} · {question.word.meaning}
+                        </>
+                      ) : patternExercise ? (
+                        <>
+                          <b lang="fa" dir="rtl">{patternExercise.pattern.form}</b>
+                          {" · "}{patternExercise.pattern.name} · {patternExercise.pattern.meaning}
+                        </>
+                      ) : null}
+                    </span>
+                    {exerciseKind === "item" && question.word.readingHelp && (
+                      <button
+                        type="button"
+                        className="feedback-reading-help"
+                        onClick={() => {
+                          setShowReadingHelp((visible) => !visible);
+                          setShowModeHelp(false);
+                        }}
+                        aria-expanded={showReadingHelp}
+                        aria-controls="reading-help"
+                      >
+                        {question.word.readingHelp.label}
+                      </button>
+                    )}
+                  </div>
+                  {exerciseKind === "item" &&
+                    showReadingHelp &&
+                    question.word.readingHelp && (
+                      <div className="feedback-reading-explainer" id="reading-help">
+                        <b lang="fa" dir="rtl">
+                          {question.word.readingHelp.markedPersian}
+                        </b>
+                        <strong>{question.word.readingHelp.label}</strong>
+                        <span>{question.word.readingHelp.explanation}</span>
+                      </div>
+                    )}
                 </div>
-                <button onClick={nextQuestion}>Continue <span>↵</span></button>
+                <button className="feedback-continue" onClick={nextQuestion}>
+                  Continue <span>↵</span>
+                </button>
               </div>
             )}
 
