@@ -1738,7 +1738,7 @@ export default function App() {
             {levelUnlockNotice >= 4 && !donationSupported && (
               <div className="unlock-donation">
                 <p>
-                  This app is free. To support its continued development,{" "}
+                  This app is free. If you wish to make a voluntary donation,{" "}
                   <a
                     href={PAYPAL_DONATION_URL}
                     target="_blank"
