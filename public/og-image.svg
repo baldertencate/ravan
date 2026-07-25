@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#243d2d" flood-opacity=".14"/>
+    </filter>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8f4ec"/>
+      <stop offset="1" stop-color="#efe7da"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#paper)"/>
+  <circle cx="1120" cy="54" r="250" fill="#e4c2aa" opacity=".27"/>
+  <circle cx="55" cy="620" r="230" fill="#c9dac8" opacity=".36"/>
+
+  <g transform="translate(76 65)">
+    <rect width="66" height="66" rx="20" fill="#2e5d45"/>
+    <text x="33" y="43" text-anchor="middle" fill="#fff" font-family="Noto Naskh Arabic, serif" font-size="31" font-weight="700">روان</text>
+    <text x="84" y="28" fill="#263a2e" font-family="Georgia, serif" font-size="26" font-weight="700">Ravân</text>
+    <text x="84" y="51" fill="#6f766e" font-family="Arial, sans-serif" font-size="14">LEARN TO READ FARSI</text>
+  </g>
+
+  <g transform="translate(76 190)">
+    <text fill="#9d4b2b" font-family="Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="2">FREE INTERACTIVE READING PRACTICE</text>
+    <text y="78" fill="#263a2e" font-family="Georgia, serif" font-size="64" font-weight="500">Learn to read</text>
+    <text y="148" fill="#263a2e" font-family="Georgia, serif" font-size="64" font-weight="500">Farsi (Persian).</text>
+    <text y="201" fill="#667168" font-family="Arial, sans-serif" font-size="22">Short, adaptive exercises train your eyes</text>
+    <text y="232" fill="#667168" font-family="Arial, sans-serif" font-size="22">to recognize Persian script.</text>
+
+    <g transform="translate(0 279)" font-family="Arial, sans-serif" font-size="16">
+      <rect width="270" height="46" rx="23" fill="#dce8d8"/>
+      <text x="21" y="29" fill="#2e5d45" font-weight="700">✓ No account required</text>
+      <rect x="282" width="285" height="46" rx="23" fill="#f6ddcb"/>
+      <text x="303" y="29" fill="#8c4b30" font-weight="700">✓ Progress stays local</text>
+    </g>
+  </g>
+
+  <g transform="translate(720 44)" filter="url(#shadow)">
+    <rect width="414" height="542" rx="34" fill="#fffdf8" stroke="#ddd6ca" stroke-width="2"/>
+    <g transform="translate(28 24)">
+      <rect width="44" height="44" rx="13" fill="#2e5d45"/>
+      <text x="22" y="30" text-anchor="middle" fill="#fff" font-family="Noto Naskh Arabic, serif" font-size="20" font-weight="700">روان</text>
+      <text x="58" y="20" fill="#263a2e" font-family="Arial, sans-serif" font-size="15" font-weight="700">Ravân</text>
+      <text x="58" y="37" fill="#81847d" font-family="Arial, sans-serif" font-size="9">Learn to Read Farsi</text>
+      <rect x="285" y="6" width="72" height="30" rx="15" fill="#dce8d8"/>
+      <text x="321" y="25" text-anchor="middle" fill="#2e5d45" font-family="Arial, sans-serif" font-size="10" font-weight="700">LEVEL 1</text>
+    </g>
+
+    <line x1="28" y1="88" x2="386" y2="88" stroke="#e5dfd5"/>
+    <g transform="translate(28 114)">
+      <text fill="#263a2e" font-family="Georgia, serif" font-size="30">Read the word</text>
+      <rect y="48" width="358" height="202" rx="24" fill="#fff" stroke="#e3ddd2"/>
+      <rect x="18" y="65" width="94" height="28" rx="9" fill="#f6ddcb"/>
+      <text x="65" y="83" text-anchor="middle" fill="#9d4b2b" font-family="Arial, sans-serif" font-size="9" font-weight="700">SOUND BRIDGE</text>
+      <text x="179" y="169" text-anchor="middle" fill="#2e5d45" font-family="Noto Naskh Arabic, serif" font-size="82" font-weight="700">آب</text>
+      <text x="179" y="226" text-anchor="middle" fill="#747b74" font-family="Arial, sans-serif" font-size="12">Choose the correct pronunciation</text>
+
+      <g transform="translate(0 266)" font-family="Arial, sans-serif" font-size="14" font-weight="700">
+        <rect width="172" height="56" rx="15" fill="#e4eee1" stroke="#7e9f85" stroke-width="2"/>
+        <text x="18" y="34" fill="#2e5d45">1</text>
+        <text x="82" y="34" text-anchor="middle" fill="#263a2e">âb</text>
+        <rect x="186" width="172" height="56" rx="15" fill="#fff" stroke="#ddd6ca"/>
+        <text x="204" y="34" fill="#8a8b84">2</text>
+        <text x="270" y="34" text-anchor="middle" fill="#263a2e">bad</text>
+        <rect y="68" width="172" height="56" rx="15" fill="#fff" stroke="#ddd6ca"/>
+        <text x="18" y="102" fill="#8a8b84">3</text>
+        <text x="82" y="102" text-anchor="middle" fill="#263a2e">dar</text>
+        <rect x="186" y="68" width="172" height="56" rx="15" fill="#fff" stroke="#ddd6ca"/>
+        <text x="204" y="102" fill="#8a8b84">4</text>
+        <text x="270" y="102" text-anchor="middle" fill="#263a2e">man</text>
+      </g>
+    </g>
+    <rect x="28" y="514" width="358" height="4" rx="2" fill="#d9d5cd"/>
+    <rect x="28" y="514" width="112" height="4" rx="2" fill="#d57a4d"/>
+  </g>
+</svg>
