@@ -49,7 +49,7 @@ export default function Landing() {
             <div className="landing-trust">
               <span><b>✓</b> No account</span>
               <span><b>✓</b> Progress stays on your device</span>
-              <span><b>✓</b> Works on mobile</span>
+              <span><b>✓</b> Works on any platform: Android, iPhone, desktop (web)</span>
             </div>
           </div>
 

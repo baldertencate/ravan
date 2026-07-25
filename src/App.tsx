@@ -162,8 +162,6 @@ const DEBUG_UNLOCK_NOTICE =
     : null;
 const ACTIVE_STORAGE_KEY = DEBUG_MODE ? DEBUG_STORAGE_KEY : STORAGE_KEY;
 const ACTIVE_DONATION_KEY = DEBUG_MODE ? DEBUG_DONATION_KEY : DONATION_KEY;
-const DEBUG_DONATION_PENDING =
-  DEBUG_MODE && SEARCH_PARAMS.get("donation") === "confirm";
 const MASTERY_STAGES = [
   {
     threshold: 10,
@@ -856,7 +854,6 @@ export default function App() {
   const [donationSupported, setDonationSupported] = useState(
     () => localStorage.getItem(ACTIVE_DONATION_KEY) === "true",
   );
-  const [donationPending, setDonationPending] = useState(DEBUG_DONATION_PENDING);
   const [showDonationThanks, setShowDonationThanks] = useState(false);
   const [masteryCelebration, setMasteryCelebration] = useState<MasteryCelebration | null>(null);
   const startedAt = useRef(Date.now());
@@ -1200,16 +1197,10 @@ export default function App() {
   }
 
   function openDonation(source: "unlock" | "about") {
-    setDonationPending(true);
-    trackEvent("Donation Opened", { source });
-  }
-
-  function confirmDonation() {
     localStorage.setItem(ACTIVE_DONATION_KEY, "true");
     setDonationSupported(true);
-    setDonationPending(false);
     setShowDonationThanks(true);
-    trackEvent("Donation Confirmed");
+    trackEvent("Donation Opened", { source });
   }
 
   function resetApp() {
@@ -1746,31 +1737,19 @@ export default function App() {
             </div>
             {levelUnlockNotice >= 4 && !donationSupported && (
               <div className="unlock-donation">
-                {!donationPending ? (
-                  <>
-                    <p>
-                      This app is free.{" "}
-                      <a
-                        href={PAYPAL_DONATION_URL}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={() => openDonation("unlock")}
-                      >
-                        Click here if you wish to make a voluntary donation to support its continued
-                        development.
-                      </a>
-                    </p>
-                    <small>Suggested $5 · choose any amount on PayPal</small>
-                  </>
-                ) : (
-                  <div className="donation-confirmation compact">
-                    <strong>Did your donation go through?</strong>
-                    <div>
-                      <button type="button" onClick={confirmDonation}>Yes, I donated</button>
-                      <button type="button" onClick={() => setDonationPending(false)}>Not yet</button>
-                    </div>
-                  </div>
-                )}
+                <p>
+                  This app is free. If you wish to make a voluntary donation to support its
+                  continued development,{" "}
+                  <a
+                    href={PAYPAL_DONATION_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => openDonation("unlock")}
+                  >
+                    click here
+                  </a>.
+                </p>
+                <small>Suggested $5 · choose any amount on PayPal</small>
               </div>
             )}
             <div className="level-unlock-actions">
@@ -2523,46 +2502,6 @@ export default function App() {
             )}
             {shareStatus && <div className="about-action-status">{shareStatus}</div>}
 
-            <div className="settings-card donation-card">
-              <div className="settings-heading">
-                <div>
-                  <span className="eyebrow">SUPPORT RAVÂN</span>
-                  <h2>{donationSupported ? "Thank you for your support" : "Keep Ravân growing"}</h2>
-                </div>
-                <span className="donation-card-heart" aria-hidden="true">♥</span>
-              </div>
-              <p>
-                This app is free. Click here if you wish to make a voluntary donation to support
-                its continued development.
-              </p>
-              {donationSupported && (
-                <div className="donation-supporter-thanks">
-                  Your support helps keep Ravân free and improving.
-                </div>
-              )}
-              {!donationPending ? (
-                <a
-                  className="primary-action donation-action"
-                  href={PAYPAL_DONATION_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={() => openDonation("about")}
-                >
-                  <span>{donationSupported ? "Donate again with PayPal" : "Donate with PayPal"}</span>
-                  <small>$5 suggested · choose any amount</small>
-                </a>
-              ) : (
-                <div className="donation-confirmation">
-                  <strong>Did your donation go through?</strong>
-                  <span>Confirming will stop donation prompts on future level celebrations.</span>
-                  <div>
-                    <button type="button" onClick={confirmDonation}>Yes, I donated</button>
-                    <button type="button" onClick={() => setDonationPending(false)}>Not yet</button>
-                  </div>
-                </div>
-              )}
-            </div>
-
             <div className="settings-card">
               <div className="settings-heading">
                 <div><span className="eyebrow">PRACTICE REMINDER</span><h2>Return on your rhythm</h2></div>
@@ -2639,6 +2578,18 @@ export default function App() {
               </div>
             </div>
             <div className="about-utility-links">
+              <p className="about-support">
+                {donationSupported ? "Thank you for supporting Ravân. " : "Ravân is free. "}
+                <a
+                  href={PAYPAL_DONATION_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => openDonation("about")}
+                >
+                  {donationSupported ? "Make another voluntary donation" : "Make a voluntary donation"}
+                </a>
+                <span> · $5 suggested, choose any amount</span>
+              </p>
               <button
                 type="button"
                 className="about-replay-link"
