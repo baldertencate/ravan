@@ -712,7 +712,7 @@ export default function App() {
   );
   const alphabetExerciseText =
     exerciseKind === "word"
-      ? question.word.persian
+      ? displayWord(question.word)
       : patternExercise
         ? patternExercise.stage === "context"
           ? patternExercise.example.word
@@ -1789,22 +1789,27 @@ export default function App() {
                 <span className="eyebrow" id="exercise-alphabet-title">
                   IN THE CURRENT EXERCISE
                 </span>
-                <small>Right to left</small>
               </div>
               <div
-                className="current-letter-sequence"
+                className="current-exercise-equation"
                 dir="rtl"
-                aria-label={`Letters in ${alphabetExerciseText}`}
+                aria-label={`${alphabetExerciseText}, shown as its contextual letter sequence`}
               >
-                {currentExerciseLetters.map((item, index) => (
-                  <span
-                    className="current-letter-unit"
-                    key={`${item.original}-${index}`}
-                  >
-                    <b lang="fa" dir="rtl">{item.form}</b>
-                    {index < currentExerciseLetters.length - 1 && <i aria-hidden="true">·</i>}
-                  </span>
-                ))}
+                <b className="current-exercise-word" lang="fa" dir="rtl">
+                  {alphabetExerciseText}
+                </b>
+                <span className="exercise-equation-sign" aria-hidden="true">=</span>
+                <span className="current-letter-sequence" aria-hidden="true">
+                  {currentExerciseLetters.map((item, index) => (
+                    <span
+                      className="current-letter-unit"
+                      key={`${item.original}-${index}`}
+                    >
+                      <b lang="fa" dir="rtl">{item.form}</b>
+                      {index < currentExerciseLetters.length - 1 && <i>·</i>}
+                    </span>
+                  ))}
+                </span>
               </div>
             </section>
 

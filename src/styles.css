@@ -1054,12 +1054,21 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .exercise-alphabet-heading {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
-.exercise-alphabet-heading small { color: var(--muted); font-size: 8px; }
-.current-letter-sequence {
+.current-exercise-equation {
   min-height: 52px; margin-top: 10px; padding: 7px 12px;
   display: flex; flex-wrap: wrap; align-items: center; gap: 3px;
   border: 1px solid rgba(46, 93, 69, .12); border-radius: 12px;
   background: rgba(255, 253, 248, .78);
+}
+.current-exercise-word {
+  color: var(--ink); font-family: "Noto Naskh Arabic", serif; font-size: 30px;
+  font-weight: 600; line-height: 1; white-space: nowrap;
+}
+.exercise-equation-sign {
+  color: var(--muted); margin: 0 8px; font-family: Georgia, serif; font-size: 17px;
+}
+.current-letter-sequence {
+  display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px;
 }
 .current-letter-unit {
   direction: rtl; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px;
@@ -1497,7 +1506,9 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .exercise-alphabet-card { padding: 12px; border-radius: 15px; }
-  .current-letter-sequence { min-height: 48px; padding: 6px 10px; }
+  .current-exercise-equation { min-height: 48px; padding: 6px 10px; }
+  .current-exercise-word { font-size: 27px; }
+  .exercise-equation-sign { margin: 0 5px; }
   .current-letter-unit b { font-size: 27px; }
   .alphabet-section-heading { margin-top: 18px; }
   .alphabet-section-heading h2 { font-size: 22px; }
