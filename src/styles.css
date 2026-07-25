@@ -721,8 +721,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .graduation-track.streak-goal .best-streak-fill { background: #a9c0ad; }
 .graduation-track.streak-goal .current-streak-fill { background: var(--green); }
 .graduation-track b {
-  position: absolute; z-index: 1; inset: 0; display: grid; place-items: center;
-  color: #33493b; font-size: 8px; letter-spacing: .04em;
+  position: absolute; z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  max-width: calc(100% - 8px); padding: 1px 6px; border-radius: 99px;
+  background: rgba(255, 253, 248, .9); box-shadow: 0 0 0 1px rgba(51, 73, 59, .08);
+  color: #27392d; font-size: 8px; line-height: 12px; letter-spacing: .04em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .graduation-track.word-goal span { background: var(--green); }
 .graduation-track.pattern-goal span { background: #b78a36; }
@@ -1207,7 +1210,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
 @media (max-width: 600px), (max-height: 700px) and (pointer: coarse) {
   .app-shell {
-    padding-bottom: 0;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
   }
 
   .topbar {
@@ -1394,13 +1397,13 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .bottom-nav {
-    position: static;
-    left: auto;
-    bottom: auto;
-    transform: none;
-    width: 100%;
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    transform: translateX(-50%);
+    width: min(100%, 760px);
     height: calc(62px + env(safe-area-inset-bottom));
-    margin-top: 4px;
+    margin-top: 0;
   }
 }
 
