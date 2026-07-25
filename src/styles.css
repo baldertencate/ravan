@@ -37,7 +37,7 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   margin: 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 24px;
 }
 .landing-brand {
@@ -54,19 +54,6 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 }
 .landing-brand strong { font-size: 17px; line-height: 1.1; }
 .landing-brand small { color: var(--muted); font-size: 9px; line-height: 1.4; }
-.landing-header nav { display: flex; align-items: center; gap: 26px; }
-.landing-header nav a {
-  color: #536057;
-  font-size: 12px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.landing-header nav .landing-nav-cta {
-  padding: 10px 14px;
-  border-radius: 11px;
-  background: var(--green);
-  color: white;
-}
 .landing main {
   width: min(1120px, calc(100% - 44px));
   margin: 0 auto;
@@ -1085,10 +1072,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .about-action {
   min-height: 58px; padding: 12px 14px; display: flex; align-items: center; justify-content: center;
   gap: 9px; border: 1px solid #d7d4ca; border-radius: 15px; background: var(--paper);
-  color: var(--green-dark); font-size: 11px; font-weight: 800; cursor: pointer;
+  color: var(--green-dark); font-size: 11px; font-weight: 800; text-decoration: none; cursor: pointer;
 }
 .about-action > span { font-size: 17px; font-weight: 500; }
 .about-action.primary { border-color: var(--green); background: var(--green); color: white; }
+.about-action.contact { min-height: 50px; grid-column: 1 / -1; }
 .about-action:disabled { opacity: .62; cursor: default; }
 .about-install-help { margin-top: 10px; }
 .about-action-status { padding: 8px 4px 0; color: var(--green); font-size: 9px; font-weight: 700; }
@@ -1182,8 +1170,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     width: min(100% - 32px, 1120px);
     min-height: 70px;
   }
-  .landing-header nav > a:not(.landing-nav-cta) { display: none; }
-  .landing-header nav { gap: 0; }
   .landing main { width: min(100% - 32px, 1120px); }
   .landing-hero {
     min-height: auto;
@@ -1203,7 +1189,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .landing-brand strong { font-size: 15px; }
   .landing-brand small { font-size: 8px; }
   .landing-header .brand-mark { width: 38px; height: 38px; }
-  .landing-header nav .landing-nav-cta { padding: 9px 11px; font-size: 10px; }
   .landing main { width: calc(100% - 28px); }
   .landing-hero { padding-top: 42px; }
   .landing-hero-copy h1 { margin-top: 10px; }

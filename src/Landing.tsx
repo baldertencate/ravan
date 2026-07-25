@@ -30,9 +30,6 @@ export default function Landing() {
           <span className="brand-mark" lang="fa" dir="rtl">روان</span>
           <span><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
         </a>
-        <nav aria-label="Landing page">
-          <PracticeLink className="landing-nav-cta">Start practising</PracticeLink>
-        </nav>
       </header>
 
       <main>
@@ -46,7 +43,7 @@ export default function Landing() {
             </p>
             <div className="landing-actions">
               <PracticeLink className="landing-primary">
-                Try it now <span aria-hidden="true">→</span>
+                Start practicing <span aria-hidden="true">→</span>
               </PracticeLink>
             </div>
             <div className="landing-trust">

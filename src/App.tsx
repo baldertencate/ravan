@@ -2417,6 +2417,14 @@ export default function App() {
                 <span aria-hidden="true">↗</span>
                 Share with friends
               </button>
+              <a
+                className="about-action contact"
+                href="mailto:balder.tencate@gmail.com"
+                onClick={() => trackEvent("Author Contact Click")}
+              >
+                <span aria-hidden="true">✉</span>
+                Contact the author
+              </a>
             </div>
             {showInstallHelp && !installed && (
               <div className="install-help about-install-help">
