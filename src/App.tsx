@@ -1000,23 +1000,6 @@ export default function App() {
   const unlockedLevel = progress.highestLevel;
   const activeMastery = levelMastery(progress);
   const activeEvidence = levelEvidence(progress);
-  const wordBoundaryStatus = !progress.wordBoundaries.mastered
-    ? {
-        label: "Learning word boundaries",
-        value: `${progress.wordBoundaries.correctPhraseIds.length}/${WORD_BOUNDARY_INITIAL_GOAL}`,
-        complete: false,
-      }
-    : progress.wordBoundaries.needsRefresh
-      ? {
-          label: "Boundary refresher",
-          value: `${progress.wordBoundaries.correctPhraseIds.length}/${WORD_BOUNDARY_REFRESH_GOAL}`,
-          complete: false,
-        }
-      : {
-          label: "Word boundaries",
-          value: "✓ Learned",
-          complete: true,
-        };
   const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
   const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
@@ -1908,15 +1891,6 @@ export default function App() {
                         {activeEvidence.itemLabel === "phrase" ? "Phrases" : "Words"} mastered{" "}
                         {activeEvidence.masteredItems}/{requiredMasteredItems}
                       </b>
-                    </div>
-                  )}
-                  {progress.activeLevel === 6 && !wordBoundaryStatus.complete && (
-                    <div
-                      className="pattern-count boundary-count"
-                      aria-label={`${wordBoundaryStatus.label}: ${wordBoundaryStatus.value}`}
-                    >
-                      <span>{wordBoundaryStatus.label}</span>
-                      <strong>{wordBoundaryStatus.value}</strong>
                     </div>
                   )}
                   {upcomingMasteryStage &&
