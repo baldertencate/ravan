@@ -1030,19 +1030,32 @@ export default function App() {
             <span className="brand-mark" lang="fa" dir="rtl">روان</span>
             <span><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
           </header>
-          <div className="onboarding-steps" aria-label={`Introduction step ${onboardingStep + 1} of 3`}>
-            {[0, 1, 2].map((step) => <i className={step <= onboardingStep ? "active" : ""} key={step} />)}
+          <div className="onboarding-progress">
+            <span>INTRODUCTION · {onboardingStep + 1} OF 3</span>
+            <div
+              className="onboarding-steps"
+              role="progressbar"
+              aria-label="Introduction progress"
+              aria-valuemin={1}
+              aria-valuemax={3}
+              aria-valuenow={onboardingStep + 1}
+            >
+              {[0, 1, 2].map((step) => (
+                <i className={step <= onboardingStep ? "active" : ""} key={step} />
+              ))}
+            </div>
           </div>
 
           {onboardingStep === 0 && (
             <div className="onboarding-panel">
-              <span className="eyebrow">PERSIAN SCRIPT, MADE APPROACHABLE</span>
+              <span className="eyebrow">BEFORE WE START</span>
               <h1>Learn to read Farsi, one word at a time.</h1>
               <p>Short, adaptive exercises train your eyes to recognize Persian words.</p>
-              <div className="onboarding-benefits">
-                <span><b>01</b> Connect script to pronunciation, then to meaning</span>
-                <span><b>02</b> Recognize useful visual patterns</span>
-              </div>
+              <span className="intro-list-label">WHAT YOU’LL PRACTICE</span>
+              <ol className="onboarding-benefits">
+                <li><b>01</b><span>Connect script to pronunciation, then to meaning</span></li>
+                <li><b>02</b><span>Recognize useful visual patterns</span></li>
+              </ol>
               <blockquote className="literary-quote onboarding-quote">
                 <p lang="fa" dir="rtl">قطره قطره جمع کن، دریا نگر</p>
                 <footer>
@@ -1051,7 +1064,7 @@ export default function App() {
                 </footer>
               </blockquote>
               <button className="primary-action" onClick={() => setOnboardingStep(1)}>
-                See how it works <span>→</span>
+                Continue introduction <span>→</span>
               </button>
             </div>
           )}
@@ -1061,11 +1074,24 @@ export default function App() {
               <span className="eyebrow">A BRIDGE YOU GRADUALLY LEAVE BEHIND</span>
               <h1>Built to outgrow transliteration.</h1>
               <p>Ravân starts by connecting Persian spelling to sound, then shifts toward English meaning as each word becomes familiar.</p>
-              <div className="method-preview">
-                <div><span>در</span><strong>Sound bridge</strong><small>First match the script to <i>dar</i>.</small></div>
-                <div><span>می‌ـ</span><strong>Pattern checks</strong><small>Learn recurring chunks as visual units.</small></div>
-                <div><span>کتاب</span><strong>Read for meaning</strong><small>Eventually recognize “book” directly.</small></div>
-              </div>
+              <span className="intro-list-label">HOW PRACTICE PROGRESSES</span>
+              <ol className="method-preview">
+                <li>
+                  <span lang="fa" dir="rtl">در</span>
+                  <strong>Sound bridge</strong>
+                  <small>First, connect <b lang="fa" dir="rtl">در</b> with its pronunciation: <i>dar</i>.</small>
+                </li>
+                <li>
+                  <span lang="fa" dir="rtl">می‌ـ</span>
+                  <strong>Pattern checks</strong>
+                  <small>Learn recurring chunks as visual units.</small>
+                </li>
+                <li>
+                  <span lang="fa" dir="rtl">کتاب</span>
+                  <strong>Read for meaning</strong>
+                  <small>Later, recognize <b lang="fa" dir="rtl">کتاب</b> directly as “book.”</small>
+                </li>
+              </ol>
               <blockquote className="literary-quote onboarding-quote onboarding-quote-compact">
                 <p lang="fa" dir="rtl">
                   صورتش دیدی ز معنی غافلی
@@ -1078,7 +1104,7 @@ export default function App() {
                 </footer>
               </blockquote>
               <button className="primary-action" onClick={() => setOnboardingStep(2)}>
-                Make it yours <span>→</span>
+                Continue <span>→</span>
               </button>
               <button className="text-action" onClick={() => setOnboardingStep(0)}>Back</button>
             </div>
@@ -1157,7 +1183,9 @@ export default function App() {
             </div>
           )}
 
-          <button className="skip-intro" onClick={finishOnboarding}>Skip introduction</button>
+          <button className="skip-intro" onClick={finishOnboarding}>
+            Skip introduction and start
+          </button>
         </section>
       </main>
     );
