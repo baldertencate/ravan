@@ -1780,7 +1780,8 @@ export default function App() {
               <h1>Persian letters at a glance.</h1>
               <p>
                 Persian reads from right to left. A letter can change shape depending on where it
-                sits, but it remains the same letter.
+                sits, but it remains the same letter. Short vowel marks are typically omitted in
+                everyday writing.
               </p>
             </div>
 
