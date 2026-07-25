@@ -600,9 +600,6 @@ export default function App() {
   const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
   const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
-  const masteryProgress = upcomingMasteryStage
-    ? Math.min(activeMastery.bestStreak, masteryTarget)
-    : activeMastery.currentStreak;
   const requiredMasteredWords = upcomingMasteryStage
     ? requiredWordsForStage(activeEvidence.wordCount, upcomingMasteryStage.coverage)
     : activeEvidence.wordCount;
@@ -1361,39 +1358,34 @@ export default function App() {
                 </div>
                 <div className="mastery-goals">
                   <div
-                    className="graduation-track streak-goal"
+                    className="streak-stats"
                     aria-label={
                       upcomingMasteryStage
                         ? `Best streak ${activeMastery.bestStreak}; ${masteryTarget} required; current streak ${activeMastery.currentStreak}`
                         : `Current answer streak ${activeMastery.currentStreak}; personal best ${activeMastery.bestStreak}`
                     }
                   >
-                    <span
-                      className="best-streak-fill"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          (Math.min(activeMastery.bestStreak, masteryTarget) / masteryTarget) * 100,
-                        )}%`,
-                      }}
-                    />
-                    <span
-                      className="current-streak-fill"
-                      style={{
-                        width: `${Math.min(
-                          100,
-                          (Math.min(activeMastery.currentStreak, masteryTarget) / masteryTarget) *
-                            100,
-                        )}%`,
-                      }}
-                    />
-                    <b>
-                      {upcomingMasteryStage
-                        ? activeMastery.bestStreak >= masteryTarget
-                          ? `Streak goal ${masteryTarget} reached · now ${activeMastery.currentStreak}`
-                          : `Best streak ${masteryProgress}/${masteryTarget} · now ${activeMastery.currentStreak}`
-                        : `Current ${activeMastery.currentStreak} · best ${activeMastery.bestStreak}`}
-                    </b>
+                    <div className="streak-stat current">
+                      <span>Current streak</span>
+                      <strong>{activeMastery.currentStreak}</strong>
+                    </div>
+                    <div
+                      className={`streak-stat best ${
+                        upcomingMasteryStage && activeMastery.bestStreak >= masteryTarget
+                          ? "goal-met"
+                          : ""
+                      }`}
+                    >
+                      <span>Best streak</span>
+                      <strong>{activeMastery.bestStreak}</strong>
+                      {upcomingMasteryStage && (
+                        <small>
+                          {activeMastery.bestStreak >= masteryTarget
+                            ? `✓ Goal ${masteryTarget} met`
+                            : `Goal ${masteryTarget}`}
+                        </small>
+                      )}
+                    </div>
                   </div>
                   {upcomingMasteryStage && (
                     <div
@@ -1415,23 +1407,17 @@ export default function App() {
                     upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
                     activeEvidence.patternCount > 0 && (
                       <div
-                        className="graduation-track pattern-goal"
+                        className={`pattern-count ${
+                          activeEvidence.masteredPatterns >= activeEvidence.patternCount
+                            ? "complete"
+                            : ""
+                        }`}
                         aria-label={`${activeEvidence.masteredPatterns} of ${activeEvidence.patternCount} patterns mastered toward Bouquet`}
                       >
-                        <span
-                          style={{
-                            width: `${Math.min(
-                              100,
-                              (activeEvidence.masteredPatterns /
-                                Math.max(1, activeEvidence.patternCount)) *
-                                100,
-                            )}%`,
-                          }}
-                        />
-                        <b>
-                          Patterns mastered {activeEvidence.masteredPatterns}/
-                          {activeEvidence.patternCount}
-                        </b>
+                        <span>Patterns mastered</span>
+                        <strong>
+                          {activeEvidence.masteredPatterns}/{activeEvidence.patternCount}
+                        </strong>
                       </div>
                     )}
                 </div>
