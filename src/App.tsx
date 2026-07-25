@@ -159,7 +159,7 @@ function exerciseLetters(text: string): ExerciseLetter[] {
   const isBrokenBetween = (leftIndex: number, rightIndex: number) =>
     characters
       .slice(leftIndex + 1, rightIndex)
-      .some((character) => /[\u200c\s·.–—-]/u.test(character));
+      .some((character) => /[\u200c\s·.\/–—-]/u.test(character));
 
   return letters.map(({ original, base, index }, letterIndex) => {
     const letter = ALPHABET_BY_LETTER.get(base)!;
