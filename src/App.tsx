@@ -1561,7 +1561,7 @@ export default function App() {
                   از صدف دُری گزین گر عاقلی
                 </p>
                 <footer>
-                  <span>“If you are wise, choose the pearl from the shell.”</span>
+                  <span>“You saw the outward form and missed the meaning; if you are wise, choose the pearl from the shell.”</span>
                   <div className="literary-attribution">
                     <cite>Rumi</cite>
                     <small>13th-century Persian poet and Sufi mystic</small>
@@ -1796,17 +1796,6 @@ export default function App() {
       <main>
         {tab === "learn" && (
           <section className="learn-view">
-            <div className="session-row">
-              <h1>
-                {exerciseKind === "pattern"
-                  ? "Spot the pattern"
-                  : question.word.kind === "phrase"
-                    ? "Read the phrase"
-                    : "Read the word"}
-              </h1>
-              {DEBUG_MODE && <span className="debug-badge">TEST MODE · ALL LEVELS</span>}
-            </div>
-
             <div className="progress-track" aria-label="Session progress">
               <span style={{ width: `${Math.min(100, session.answers * 10)}%` }} />
             </div>
@@ -1919,6 +1908,17 @@ export default function App() {
                 </div>
               </div>
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
+            </div>
+
+            <div className="session-row">
+              <h1>
+                {exerciseKind === "pattern"
+                  ? "Spot the pattern"
+                  : question.word.kind === "phrase"
+                    ? "Read the phrase"
+                    : "Read the word"}
+              </h1>
+              {DEBUG_MODE && <span className="debug-badge">TEST MODE · ALL LEVELS</span>}
             </div>
 
             {exerciseKind === "item" ? (
