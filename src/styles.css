@@ -1040,6 +1040,89 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .pattern-tile h3 { font-size: 11px; margin: 7px 0 3px; }
 .pattern-tile p { color: var(--muted); font-size: 9px; line-height: 1.4; margin: 0; }
 
+.alphabet-view { padding-bottom: 10px; }
+.exercise-alphabet-card {
+  padding: 18px; border: 1px solid #dcd5c8; border-radius: 20px;
+  background: linear-gradient(145deg, rgba(222, 233, 218, .78), rgba(255, 253, 248, .88));
+}
+.exercise-alphabet-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 18px;
+}
+.exercise-alphabet-heading p {
+  max-width: 390px; margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45;
+}
+.exercise-alphabet-heading > strong {
+  color: var(--green-dark); font-family: "Noto Naskh Arabic", serif;
+  font-size: 38px; line-height: 1.2; white-space: nowrap;
+}
+.current-letter-sequence {
+  margin-top: 13px; padding: 2px 0; display: flex; flex-wrap: wrap; gap: 7px;
+}
+.current-letter-item {
+  direction: ltr; flex: 0 1 122px; min-width: 112px; padding: 8px 10px;
+  display: grid; grid-template-columns: 42px auto; align-items: center; gap: 7px;
+  border: 1px solid rgba(46, 93, 69, .14); border-radius: 12px;
+  background: rgba(255, 253, 248, .82);
+}
+.current-letter-item > b {
+  color: var(--green); font-family: "Noto Naskh Arabic", serif; font-size: 30px;
+  font-weight: 600; line-height: 1; text-align: center;
+}
+.current-letter-item > span { min-width: 0; display: flex; flex-direction: column; }
+.current-letter-item > span strong {
+  color: var(--ink); font-family: "Noto Naskh Arabic", serif; font-size: 16px; line-height: 1.1;
+}
+.current-letter-item small {
+  color: var(--muted); font-size: 7px; line-height: 1.3; white-space: nowrap;
+}
+.alphabet-section-heading {
+  margin: 24px 2px 11px; display: flex; align-items: end; justify-content: space-between; gap: 12px;
+}
+.alphabet-section-heading h2 { margin: 4px 0 0; font-size: 25px; }
+.alphabet-section-heading > span { color: var(--muted); font-size: 9px; }
+.alphabet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.alphabet-letter-card {
+  min-width: 0; padding: 12px; border: 1px solid #e2ddd3; border-radius: 15px;
+  background: rgba(255, 253, 248, .72); transition: border-color .2s, background .2s;
+}
+.alphabet-letter-card.current {
+  border-color: rgba(220, 120, 77, .58); background: #fff4e9;
+  box-shadow: inset 3px 0 0 rgba(220, 120, 77, .62);
+}
+.alphabet-letter-main { display: flex; align-items: center; gap: 10px; }
+.alphabet-letter-main > b {
+  width: 46px; color: var(--green-dark); font-family: "Noto Naskh Arabic", serif;
+  font-size: 38px; font-weight: 600; line-height: 1; text-align: center;
+}
+.alphabet-letter-main > span { min-width: 0; display: flex; flex-direction: column; }
+.alphabet-letter-main strong { font-size: 11px; }
+.alphabet-letter-main small { color: var(--orange); font-size: 9px; font-weight: 700; }
+.alphabet-forms {
+  margin-top: 9px; padding-top: 8px; display: grid; grid-template-columns: repeat(3, 1fr);
+  direction: rtl; border-top: 1px solid #ebe5da;
+}
+.alphabet-forms span,
+.alphabet-nonjoining span {
+  min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 1px;
+}
+.alphabet-forms small,
+.alphabet-nonjoining small {
+  color: var(--muted); font-size: 6px; font-weight: 700; text-transform: uppercase;
+}
+.alphabet-forms b,
+.alphabet-nonjoining b {
+  color: var(--green); font-family: "Noto Naskh Arabic", serif;
+  font-size: 21px; font-weight: 500; line-height: 1.15;
+}
+.alphabet-nonjoining {
+  min-height: 48px; margin-top: 9px; padding-top: 8px; display: flex;
+  direction: rtl; align-items: center; gap: 10px; border-top: 1px solid #ebe5da;
+}
+.alphabet-nonjoining span { width: 52px; flex: 0 0 auto; }
+.alphabet-nonjoining em {
+  color: var(--muted); font-size: 7px; font-style: normal; line-height: 1.35;
+}
+
 .about-view { padding-bottom: 10px; }
 .about-view .page-intro { margin-bottom: 20px; }
 .about-literary-quote {
@@ -1125,12 +1208,15 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .bottom-nav {
   position: fixed; z-index: 10; bottom: 0; left: 50%; transform: translateX(-50%);
   width: min(100%, 760px); height: calc(70px + env(safe-area-inset-bottom));
-  padding: 8px 14px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(4, 1fr);
+  padding: 8px 10px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr);
   background: rgba(255, 253, 248, .92); backdrop-filter: blur(18px);
   border-top: 1px solid rgba(50, 65, 52, .12);
 }
 .bottom-nav button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10px; color: #7f857d; cursor: pointer; }
 .bottom-nav button > span:first-child { font-size: 18px; }
+.bottom-nav button:nth-child(3) > span:first-child {
+  font-family: "Noto Naskh Arabic", serif; font-size: 20px; line-height: 1;
+}
 .bottom-nav button.active { color: var(--green); font-weight: 700; }
 
 @media (max-width: 900px) {
@@ -1231,6 +1317,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .level-mastery img { width: 32px; height: 32px; }
   .section-heading > span { display: none; }
   .pattern-grid { grid-template-columns: 1fr; }
+  .alphabet-section-heading > span { display: none; }
 }
 
 @media (max-width: 600px), (max-height: 700px) and (pointer: coarse) {
@@ -1412,6 +1499,25 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .adapt-note {
     margin-top: 12px;
   }
+
+  .exercise-alphabet-card { padding: 12px; border-radius: 15px; }
+  .exercise-alphabet-heading { align-items: flex-start; gap: 10px; }
+  .exercise-alphabet-heading > strong { font-size: 31px; }
+  .current-letter-sequence { margin-top: 9px; }
+  .current-letter-item {
+    flex-basis: 104px; min-width: 100px; padding: 7px 8px; grid-template-columns: 37px auto;
+  }
+  .current-letter-item > b { font-size: 27px; }
+  .alphabet-section-heading { margin-top: 18px; }
+  .alphabet-section-heading h2 { font-size: 22px; }
+  .alphabet-grid { gap: 6px; }
+  .alphabet-letter-card { padding: 9px; border-radius: 12px; }
+  .alphabet-letter-main { gap: 6px; }
+  .alphabet-letter-main > b { width: 38px; font-size: 33px; }
+  .alphabet-letter-main strong { font-size: 10px; }
+  .alphabet-forms b,
+  .alphabet-nonjoining b { font-size: 18px; }
+  .bottom-nav button { font-size: 9px; }
 
   .bottom-nav {
     position: fixed;

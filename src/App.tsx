@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
 import vowelData from "./data/vowels.json";
 import patternsData from "./data/patterns.json";
+import { LETTER_ALIASES, PERSIAN_ALPHABET, type PersianLetter } from "./data/alphabet";
 import { trackEvent, trackSessionEvent } from "./analytics";
 
 type Mode = "meaning" | "transliteration";
-type Tab = "learn" | "journey" | "words" | "about";
+type Tab = "learn" | "journey" | "alphabet" | "words" | "about";
 type Word = {
   id: string;
   persian: string;
@@ -133,6 +134,64 @@ const MASTERY_STAGES = [
     image: `${import.meta.env.BASE_URL}mastery/bouquet.png`,
   },
 ] as const;
+const ALPHABET_BY_LETTER = new Map(PERSIAN_ALPHABET.map((letter) => [letter.letter, letter]));
+
+type ExerciseLetter = {
+  original: string;
+  base: string;
+  letter: PersianLetter;
+  form: string;
+  position: "initial" | "medial" | "final" | "isolated";
+};
+
+function normalizeLetter(character: string) {
+  return LETTER_ALIASES[character] ?? character;
+}
+
+function exerciseLetters(text: string): ExerciseLetter[] {
+  const characters = [...text];
+  const letterIndexes = characters
+    .map((character, index) => ({
+      original: character,
+      base: normalizeLetter(character),
+      index,
+    }))
+    .filter(({ base }) => ALPHABET_BY_LETTER.has(base));
+
+  const isBrokenBetween = (leftIndex: number, rightIndex: number) =>
+    characters
+      .slice(leftIndex + 1, rightIndex)
+      .some((character) => /[\u200c\s·.–—-]/u.test(character));
+
+  return letterIndexes.map(({ original, base, index }, letterIndex) => {
+    const letter = ALPHABET_BY_LETTER.get(base)!;
+    const previous = letterIndexes[letterIndex - 1];
+    const next = letterIndexes[letterIndex + 1];
+    const joinsPrevious =
+      Boolean(previous) &&
+      !isBrokenBetween(previous.index, index) &&
+      !ALPHABET_BY_LETTER.get(previous.base)?.nonJoining;
+    const joinsNext =
+      Boolean(next) && !isBrokenBetween(index, next.index) && !letter.nonJoining;
+    const position = joinsPrevious
+      ? joinsNext
+        ? "medial"
+        : "final"
+      : joinsNext
+        ? "initial"
+        : "isolated";
+    const form =
+      position === "medial"
+        ? `ـ${original}ـ`
+        : position === "final"
+          ? `ـ${original}`
+          : position === "initial"
+            ? `${original}ـ`
+            : original;
+
+    return { original, base, letter, form, position };
+  });
+}
 
 const emptyProgress: Progress = {
   words: {},
@@ -453,10 +512,11 @@ function choosePatternExercise(progress: Progress, excludePatternId?: string): P
   return { pattern, options: shuffle([pattern, ...distractors]), stage, example };
 }
 
-function Icon({ name }: { name: "learn" | "journey" | "words" | "about" | "flame" | "clock" | "check" | "spark" }) {
+function Icon({ name }: { name: Tab | "flame" | "clock" | "check" | "spark" }) {
   const icons = {
     learn: "◉",
     journey: "↗",
+    alphabet: "ا",
     words: "≡",
     about: "i",
     flame: "◆",
@@ -660,6 +720,20 @@ export default function App() {
       pattern.chunk.length > 1 &&
       question.word.persian.includes(pattern.chunk),
   );
+  const alphabetExerciseText =
+    exerciseKind === "word"
+      ? question.word.persian
+      : patternExercise
+        ? patternExercise.stage === "context"
+          ? patternExercise.example.word
+          : patternExercise.pattern.form
+        : "";
+  const currentExerciseLetters = exerciseLetters(alphabetExerciseText);
+  const currentBaseLetters = new Set(currentExerciseLetters.map(({ base }) => base));
+  const alphabetExerciseLabel =
+    exerciseKind === "pattern" && patternExercise?.stage === "isolation"
+      ? "IN THIS PATTERN"
+      : "IN THIS WORD";
 
   function highlightPattern(text: string, pattern: Pattern, exampleChunk?: string) {
     const chunk = exampleChunk ?? pattern.chunk;
@@ -1713,6 +1787,87 @@ export default function App() {
           </section>
         )}
 
+        {tab === "alphabet" && (
+          <section className="alphabet-view">
+            <div className="page-intro compact">
+              <span className="eyebrow">ALPHABET</span>
+              <h1>Persian letters at a glance.</h1>
+              <p>
+                Persian reads from right to left. A letter can change shape depending on where it
+                sits, but it remains the same letter.
+              </p>
+            </div>
+
+            <section className="exercise-alphabet-card" aria-labelledby="exercise-alphabet-title">
+              <div className="exercise-alphabet-heading">
+                <div>
+                  <span className="eyebrow" id="exercise-alphabet-title">
+                    {alphabetExerciseLabel}
+                  </span>
+                  <p>Follow the letters from right to left, just as they appear in practice.</p>
+                </div>
+                <strong lang="fa" dir="rtl">{alphabetExerciseText}</strong>
+              </div>
+              <div
+                className="current-letter-sequence"
+                dir="rtl"
+                aria-label={`Letters in ${alphabetExerciseText}`}
+              >
+                {currentExerciseLetters.map((item, index) => (
+                  <div className="current-letter-item" key={`${item.original}-${index}`}>
+                    <b lang="fa" dir="rtl">{item.form}</b>
+                    <span>
+                      <strong lang="fa" dir="rtl">{item.original}</strong>
+                      <small>
+                        {item.letter.sound} · {item.position}
+                        {item.original !== item.base ? ` · alphabet: ${item.base}` : ""}
+                      </small>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <div className="alphabet-section-heading">
+              <div>
+                <span className="eyebrow">ALL 32 LETTERS</span>
+                <h2>The complete alphabet</h2>
+              </div>
+              <span>Letters in the exercise are highlighted</span>
+            </div>
+            <div className="alphabet-grid">
+              {PERSIAN_ALPHABET.map((letter) => (
+                <article
+                  className={`alphabet-letter-card ${
+                    currentBaseLetters.has(letter.letter) ? "current" : ""
+                  }`}
+                  key={letter.letter}
+                >
+                  <div className="alphabet-letter-main">
+                    <b lang="fa" dir="rtl">{letter.letter}</b>
+                    <span>
+                      <strong>{letter.name}</strong>
+                      <small>{letter.sound}</small>
+                    </span>
+                  </div>
+                  {letter.nonJoining ? (
+                    <div className="alphabet-nonjoining">
+                      <span><small>final</small><b lang="fa" dir="rtl">ـ{letter.letter}</b></span>
+                      <em>Doesn’t connect to the next letter</em>
+                    </div>
+                  ) : (
+                    <div className="alphabet-forms">
+                      <span><small>initial</small><b lang="fa" dir="rtl">{letter.letter}ـ</b></span>
+                      <span><small>medial</small><b lang="fa" dir="rtl">ـ{letter.letter}ـ</b></span>
+                      <span><small>final</small><b lang="fa" dir="rtl">ـ{letter.letter}</b></span>
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </section>
+        )}
+
         {tab === "words" && (
           <section className="words-view">
             <div className="page-intro compact">
@@ -1905,7 +2060,7 @@ export default function App() {
       </main>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        {(["learn", "journey", "words", "about"] as Tab[]).map((item) => (
+        {(["learn", "journey", "alphabet", "words", "about"] as Tab[]).map((item) => (
           <button
             key={item}
             className={tab === item ? "active" : ""}
@@ -1915,7 +2070,9 @@ export default function App() {
             }}
           >
             <Icon name={item} />
-            <span>{item === "learn" ? "Practice" : item[0].toUpperCase() + item.slice(1)}</span>
+            <span>
+              {item === "learn" ? "Practice" : item[0].toUpperCase() + item.slice(1)}
+            </span>
           </button>
         ))}
       </nav>
