@@ -603,30 +603,46 @@ export default function App() {
   const masteryProgress = upcomingMasteryStage
     ? Math.min(activeMastery.bestStreak, masteryTarget)
     : activeMastery.currentStreak;
-  const masteryRemaining = Math.max(0, masteryTarget - activeMastery.bestStreak);
   const requiredMasteredWords = upcomingMasteryStage
     ? requiredWordsForStage(activeEvidence.wordCount, upcomingMasteryStage.coverage)
     : activeEvidence.wordCount;
-  const wordsToNextStage = Math.max(0, requiredMasteredWords - activeEvidence.masteredWords);
-  const patternsToNextStage =
-    upcomingMasteryStage?.threshold === MASTERY_STAGES.at(-1)!.threshold
-      ? Math.max(0, activeEvidence.patternCount - activeEvidence.masteredPatterns)
-      : 0;
-  const nextGoalParts = upcomingMasteryStage
-    ? [
-        masteryRemaining > 0
-          ? `${masteryRemaining} more for a best streak of ${masteryTarget}`
-          : "",
-        wordsToNextStage > 0
-          ? `master ${wordsToNextStage} more ${wordsToNextStage === 1 ? "word" : "words"}`
-          : "",
-        patternsToNextStage > 0
-          ? `complete ${patternsToNextStage} more ${
-              patternsToNextStage === 1 ? "pattern" : "patterns"
-            }`
-          : "",
-      ].filter(Boolean)
-    : [];
+  const nextStageGoal = (() => {
+    if (!upcomingMasteryStage) return "";
+
+    const action =
+      upcomingMasteryStage.name === "Sprout"
+        ? "grow your first sprout"
+        : upcomingMasteryStage.name === "Bud"
+          ? "make your flower bud"
+          : upcomingMasteryStage.name === "Bloom"
+            ? "make your flower bloom"
+            : "grow a bouquet";
+    const unlock =
+      upcomingMasteryStage.threshold === LEVEL_UNLOCK_STREAK &&
+      progress.activeLevel < LEVELS.length
+        ? ` and unlock Level ${progress.activeLevel + 1}`
+        : "";
+    const requirements = [
+      `${upcomingMasteryStage.coverage === 1 ? "master all" : "master"} ${requiredMasteredWords} ${
+        requiredMasteredWords === 1 ? "word" : "words"
+      }`,
+      ...(upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
+      activeEvidence.patternCount > 0
+        ? [
+            `master all ${activeEvidence.patternCount} ${
+              activeEvidence.patternCount === 1 ? "pattern" : "patterns"
+            }`,
+          ]
+        : []),
+      `reach a streak of ${masteryTarget}`,
+    ];
+    const requirementText =
+      requirements.length === 2
+        ? requirements.join(" and ")
+        : `${requirements.slice(0, -1).join(", ")}, and ${requirements.at(-1)}`;
+
+    return `To ${action}${unlock}, ${requirementText}.`;
+  })();
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
     progress.highestLevel > progress.activeLevel;
@@ -1339,14 +1355,7 @@ export default function App() {
                   </strong>
                   <span>
                     {upcomingMasteryStage
-                      ? `${upcomingMasteryStage.name}: ${
-                          nextGoalParts.join(" · ") || "ready to grow"
-                        }${
-                          upcomingMasteryStage.threshold === LEVEL_UNLOCK_STREAK &&
-                          progress.activeLevel < LEVELS.length
-                            ? ` and unlock Level ${progress.activeLevel + 1}`
-                            : ""
-                        }`
+                      ? nextStageGoal
                       : `Your bouquet is fully grown. Keep your current streak going.`}
                   </span>
                 </div>
