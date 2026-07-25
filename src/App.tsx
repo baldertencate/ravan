@@ -1910,11 +1910,9 @@ export default function App() {
                       </b>
                     </div>
                   )}
-                  {progress.activeLevel === 6 && (
+                  {progress.activeLevel === 6 && !wordBoundaryStatus.complete && (
                     <div
-                      className={`pattern-count boundary-count ${
-                        wordBoundaryStatus.complete ? "complete" : ""
-                      }`}
+                      className="pattern-count boundary-count"
                       aria-label={`${wordBoundaryStatus.label}: ${wordBoundaryStatus.value}`}
                     >
                       <span>{wordBoundaryStatus.label}</span>
