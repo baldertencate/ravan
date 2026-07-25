@@ -125,7 +125,11 @@ const VOWEL_KEY = "ravan-show-vowels-v1";
 const ONBOARDING_KEY = "ravan-onboarding-v1";
 const REMINDER_KEY = "ravan-reminder-v1";
 const HAPTICS_KEY = "ravan-haptics-v1";
+const DONATION_KEY = "ravan-donation-supported-v1";
+const DEBUG_DONATION_KEY = "ravan-debug-donation-supported-v1";
 const APP_URL = "https://baldertencate.github.io/ravan/app/";
+const PAYPAL_DONATION_URL =
+  "https://www.paypal.com/donate/?business=KNVTU38K3S588&no_recurring=1&item_name=Thank+you+for+your+voluntary+donation+to+support+the+continued+development+of+the+Ravan+app%21&currency_code=USD";
 const LEVEL_UNLOCK_STREAK = 15;
 const WORD_BOUNDARY_INITIAL_GOAL = 5;
 const WORD_BOUNDARY_REFRESH_GOAL = 3;
@@ -148,7 +152,18 @@ const DEBUG_START_LEVEL =
   REQUESTED_DEBUG_LEVEL <= LEVELS.length
     ? REQUESTED_DEBUG_LEVEL
     : null;
+const REQUESTED_DEBUG_UNLOCK = Number(SEARCH_PARAMS.get("unlock"));
+const DEBUG_UNLOCK_NOTICE =
+  DEBUG_MODE &&
+  Number.isInteger(REQUESTED_DEBUG_UNLOCK) &&
+  REQUESTED_DEBUG_UNLOCK >= 2 &&
+  REQUESTED_DEBUG_UNLOCK <= LEVELS.length
+    ? REQUESTED_DEBUG_UNLOCK
+    : null;
 const ACTIVE_STORAGE_KEY = DEBUG_MODE ? DEBUG_STORAGE_KEY : STORAGE_KEY;
+const ACTIVE_DONATION_KEY = DEBUG_MODE ? DEBUG_DONATION_KEY : DONATION_KEY;
+const DEBUG_DONATION_PENDING =
+  DEBUG_MODE && SEARCH_PARAMS.get("donation") === "confirm";
 const MASTERY_STAGES = [
   {
     threshold: 10,
@@ -836,8 +851,13 @@ export default function App() {
   const [installed, setInstalled] = useState(isStandalone);
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
-  const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(null);
+  const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(DEBUG_UNLOCK_NOTICE);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [donationSupported, setDonationSupported] = useState(
+    () => localStorage.getItem(ACTIVE_DONATION_KEY) === "true",
+  );
+  const [donationPending, setDonationPending] = useState(DEBUG_DONATION_PENDING);
+  const [showDonationThanks, setShowDonationThanks] = useState(false);
   const [masteryCelebration, setMasteryCelebration] = useState<MasteryCelebration | null>(null);
   const startedAt = useRef(Date.now());
   const masteryCelebrationTimer = useRef<number | null>(null);
@@ -1179,10 +1199,24 @@ export default function App() {
     }
   }
 
+  function openDonation(source: "unlock" | "about") {
+    setDonationPending(true);
+    trackEvent("Donation Opened", { source });
+  }
+
+  function confirmDonation() {
+    localStorage.setItem(ACTIVE_DONATION_KEY, "true");
+    setDonationSupported(true);
+    setDonationPending(false);
+    setShowDonationThanks(true);
+    trackEvent("Donation Confirmed");
+  }
+
   function resetApp() {
     [
       STORAGE_KEY,
       DEBUG_STORAGE_KEY,
+      DEBUG_DONATION_KEY,
       VOWEL_KEY,
       ONBOARDING_KEY,
       REMINDER_KEY,
@@ -1624,6 +1658,29 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {showDonationThanks && (
+        <div className="level-unlock-backdrop donation-thanks-backdrop">
+          <section
+            className="donation-thanks-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="donation-thanks-title"
+          >
+            <span className="donation-heart" aria-hidden="true">♥</span>
+            <span className="eyebrow">THANK YOU</span>
+            <h2 id="donation-thanks-title">Thank you for your support.</h2>
+            <p>Your voluntary donation helps Ravân’s continued development.</p>
+            <button
+              type="button"
+              className="primary-action"
+              onClick={() => setShowDonationThanks(false)}
+              autoFocus
+            >
+              Continue
+            </button>
+          </section>
+        </div>
+      )}
       {showResetConfirm && (
         <div className="level-unlock-backdrop">
           <section
@@ -1655,10 +1712,12 @@ export default function App() {
           </section>
         </div>
       )}
-      {levelUnlockNotice && (
+      {levelUnlockNotice && !showDonationThanks && (
         <div className="level-unlock-backdrop">
           <section
-            className="level-unlock-splash"
+            className={`level-unlock-splash ${
+              levelUnlockNotice >= 4 && !donationSupported ? "with-donation" : ""
+            }`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="level-unlock-title"
@@ -1685,6 +1744,35 @@ export default function App() {
                 a Bloom, then master every word and pattern for a Bouquet.
               </span>
             </div>
+            {levelUnlockNotice >= 4 && !donationSupported && (
+              <div className="unlock-donation">
+                {!donationPending ? (
+                  <>
+                    <p>
+                      This app is free.{" "}
+                      <a
+                        href={PAYPAL_DONATION_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={() => openDonation("unlock")}
+                      >
+                        Click here if you wish to make a voluntary donation to support its continued
+                        development.
+                      </a>
+                    </p>
+                    <small>Suggested $5 · choose any amount on PayPal</small>
+                  </>
+                ) : (
+                  <div className="donation-confirmation compact">
+                    <strong>Did your donation go through?</strong>
+                    <div>
+                      <button type="button" onClick={confirmDonation}>Yes, I donated</button>
+                      <button type="button" onClick={() => setDonationPending(false)}>Not yet</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="level-unlock-actions">
               <button className="primary-action" onClick={graduate} autoFocus>
                 Go to Level {levelUnlockNotice} <span>→</span>
@@ -2434,6 +2522,46 @@ export default function App() {
               </div>
             )}
             {shareStatus && <div className="about-action-status">{shareStatus}</div>}
+
+            <div className="settings-card donation-card">
+              <div className="settings-heading">
+                <div>
+                  <span className="eyebrow">SUPPORT RAVÂN</span>
+                  <h2>{donationSupported ? "Thank you for your support" : "Keep Ravân growing"}</h2>
+                </div>
+                <span className="donation-card-heart" aria-hidden="true">♥</span>
+              </div>
+              <p>
+                This app is free. Click here if you wish to make a voluntary donation to support
+                its continued development.
+              </p>
+              {donationSupported && (
+                <div className="donation-supporter-thanks">
+                  Your support helps keep Ravân free and improving.
+                </div>
+              )}
+              {!donationPending ? (
+                <a
+                  className="primary-action donation-action"
+                  href={PAYPAL_DONATION_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => openDonation("about")}
+                >
+                  <span>{donationSupported ? "Donate again with PayPal" : "Donate with PayPal"}</span>
+                  <small>$5 suggested · choose any amount</small>
+                </a>
+              ) : (
+                <div className="donation-confirmation">
+                  <strong>Did your donation go through?</strong>
+                  <span>Confirming will stop donation prompts on future level celebrations.</span>
+                  <div>
+                    <button type="button" onClick={confirmDonation}>Yes, I donated</button>
+                    <button type="button" onClick={() => setDonationPending(false)}>Not yet</button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="settings-card">
               <div className="settings-heading">
