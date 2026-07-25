@@ -1,4 +1,4 @@
-const CACHE = "ravan-v25";
+const CACHE = "ravan-v26";
 const SHELL = [
   "./",
   "./app/",

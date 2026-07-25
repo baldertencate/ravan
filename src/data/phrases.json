@@ -1,0 +1,589 @@
+[
+  {
+    "id": "ph001",
+    "kind": "phrase",
+    "persian": "این کتاب",
+    "vowelled": "این کِتاب",
+    "transliteration": "in ketâb",
+    "meaning": "this book",
+    "level": 6,
+    "rank": 122,
+    "letters": ["ا", "ی", "ن", "ک", "ت", "ب"],
+    "segments": ["این", "کتاب"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "این کتاب",
+      "explanation": "The demonstrative “this” comes before the noun, so there is no ezafe connector here."
+    }
+  },
+  {
+    "id": "ph002",
+    "kind": "phrase",
+    "persian": "کتاب جدید",
+    "vowelled": "کِتابِ جَدید",
+    "transliteration": "ketâb-e jadid",
+    "meaning": "the new book",
+    "level": 6,
+    "rank": 123,
+    "letters": ["ک", "ت", "ا", "ب", "ج", "د", "ی"],
+    "segments": ["کتاب", "جدید"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "کتابِ جدید",
+      "explanation": "The second word describes the book, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph003",
+    "kind": "phrase",
+    "persian": "کتاب من",
+    "vowelled": "کِتابِ مَن",
+    "transliteration": "ketâb-e man",
+    "meaning": "my book",
+    "level": 6,
+    "rank": 124,
+    "letters": ["ک", "ت", "ا", "ب", "م", "ن"],
+    "segments": ["کتاب", "من"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "کتابِ من",
+      "explanation": "The second word tells us whose book it is, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph004",
+    "kind": "phrase",
+    "persian": "در خانه",
+    "vowelled": "دَر خانِه",
+    "transliteration": "dar khâne",
+    "meaning": "at home",
+    "level": 6,
+    "rank": 125,
+    "letters": ["د", "ر", "خ", "ا", "ن", "ه"],
+    "segments": ["در", "خانه"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "در خانه",
+      "explanation": "The preposition “in/at” comes before “home.” The final -e belongs to khâne itself; no ezafe is added."
+    }
+  },
+  {
+    "id": "ph005",
+    "kind": "phrase",
+    "persian": "دوست من",
+    "vowelled": "دوستِ مَن",
+    "transliteration": "dust-e man",
+    "meaning": "my friend",
+    "level": 6,
+    "rank": 126,
+    "letters": ["د", "و", "س", "ت", "م", "ن"],
+    "segments": ["دوست", "من"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "دوستِ من",
+      "explanation": "The second word tells us whose friend it is, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph006",
+    "kind": "phrase",
+    "persian": "دو کتاب",
+    "vowelled": "دُو کِتاب",
+    "transliteration": "do ketâb",
+    "meaning": "two books",
+    "level": 6,
+    "rank": 127,
+    "letters": ["د", "و", "ک", "ت", "ا", "ب"],
+    "segments": ["دو", "کتاب"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "دو کتاب",
+      "explanation": "The number comes before the noun, so there is no ezafe connector between these words."
+    }
+  },
+  {
+    "id": "ph007",
+    "kind": "phrase",
+    "persian": "مادر من",
+    "vowelled": "مادَرِ مَن",
+    "transliteration": "mâdar-e man",
+    "meaning": "my mother",
+    "level": 6,
+    "rank": 128,
+    "letters": ["م", "ا", "د", "ر", "ن"],
+    "segments": ["مادر", "من"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "مادرِ من",
+      "explanation": "The second word tells us whose mother it is, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph008",
+    "kind": "phrase",
+    "persian": "با من",
+    "vowelled": "با مَن",
+    "transliteration": "bâ man",
+    "meaning": "with me",
+    "level": 6,
+    "rank": 129,
+    "letters": ["ب", "ا", "م", "ن"],
+    "segments": ["با", "من"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "با من",
+      "explanation": "The preposition “with” comes before the pronoun, so there is no ezafe connector."
+    }
+  },
+  {
+    "id": "ph009",
+    "kind": "phrase",
+    "persian": "آن خانه",
+    "vowelled": "آن خانِه",
+    "transliteration": "ân khâne",
+    "meaning": "that house",
+    "level": 6,
+    "rank": 130,
+    "letters": ["آ", "ن", "خ", "ا", "ه"],
+    "segments": ["آن", "خانه"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "آن خانه",
+      "explanation": "The demonstrative “that” comes before the noun, so there is no ezafe connector here."
+    }
+  },
+  {
+    "id": "ph010",
+    "kind": "phrase",
+    "persian": "کتاب قدیمی",
+    "vowelled": "کِتابِ قَدیمی",
+    "transliteration": "ketâb-e ghadimi",
+    "meaning": "the old book",
+    "level": 6,
+    "rank": 131,
+    "letters": ["ک", "ت", "ا", "ب", "ق", "د", "ی", "م"],
+    "segments": ["کتاب", "قدیمی"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "کتابِ قدیمی",
+      "explanation": "The second word describes the book, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph011",
+    "kind": "phrase",
+    "persian": "پدر او",
+    "vowelled": "پِدَرِ اُو",
+    "transliteration": "pedar-e u",
+    "meaning": "his / her father",
+    "level": 6,
+    "rank": 132,
+    "letters": ["پ", "د", "ر", "ا", "و"],
+    "segments": ["پدر", "او"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "پدرِ او",
+      "explanation": "The second word tells us whose father it is, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph012",
+    "kind": "phrase",
+    "persian": "از مدرسه",
+    "vowelled": "اَز مَدرِسِه",
+    "transliteration": "az madrese",
+    "meaning": "from school",
+    "level": 6,
+    "rank": 133,
+    "letters": ["ا", "ز", "م", "د", "ر", "س", "ه"],
+    "segments": ["از", "مدرسه"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "از مدرسه",
+      "explanation": "The preposition “from” comes before the noun, so there is no ezafe connector."
+    }
+  },
+  {
+    "id": "ph013",
+    "kind": "phrase",
+    "persian": "شهر بزرگ",
+    "vowelled": "شَهرِ بُزُرگ",
+    "transliteration": "shahr-e bozorg",
+    "meaning": "the big city",
+    "level": 6,
+    "rank": 134,
+    "letters": ["ش", "ه", "ر", "ب", "ز", "گ"],
+    "segments": ["شهر", "بزرگ"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "شهرِ بزرگ",
+      "explanation": "The second word describes the city, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph014",
+    "kind": "phrase",
+    "persian": "برای تو",
+    "vowelled": "بَرای تُو",
+    "transliteration": "barâye to",
+    "meaning": "for you",
+    "level": 6,
+    "rank": 135,
+    "letters": ["ب", "ر", "ا", "ی", "ت", "و"],
+    "segments": ["برای", "تو"],
+    "readingHelp": {
+      "label": "Why no connector?",
+      "markedPersian": "برای تو",
+      "explanation": "The -ye sound belongs to barâye (“for”) itself. It is not an ezafe connector between these words."
+    }
+  },
+  {
+    "id": "ph015",
+    "kind": "phrase",
+    "persian": "بازار شهر",
+    "vowelled": "بازارِ شَهر",
+    "transliteration": "bâzâr-e shahr",
+    "meaning": "the city market",
+    "level": 6,
+    "rank": 136,
+    "letters": ["ب", "ا", "ز", "ر", "ش", "ه"],
+    "segments": ["بازار", "شهر"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "بازارِ شهر",
+      "explanation": "The second word identifies which market, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph016",
+    "kind": "phrase",
+    "persian": "این سؤال",
+    "vowelled": "این سُؤال",
+    "transliteration": "in soâl",
+    "meaning": "this question",
+    "level": 6,
+    "rank": 137,
+    "letters": ["ا", "ی", "ن", "س", "ؤ", "ا", "ل"],
+    "segments": ["این", "سؤال"]
+  },
+  {
+    "id": "ph017",
+    "kind": "phrase",
+    "persian": "روز خوب",
+    "vowelled": "روزِ خوب",
+    "transliteration": "ruz-e khub",
+    "meaning": "a good day",
+    "level": 6,
+    "rank": 138,
+    "letters": ["ر", "و", "ز", "خ", "ب"],
+    "segments": ["روز", "خوب"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "روزِ خوب",
+      "explanation": "The second word describes the day, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph018",
+    "kind": "phrase",
+    "persian": "آن روز",
+    "vowelled": "آن روز",
+    "transliteration": "ân ruz",
+    "meaning": "that day",
+    "level": 6,
+    "rank": 139,
+    "letters": ["آ", "ن", "ر", "و", "ز"],
+    "segments": ["آن", "روز"]
+  },
+  {
+    "id": "ph019",
+    "kind": "phrase",
+    "persian": "شب آرام",
+    "vowelled": "شَبِ آرام",
+    "transliteration": "shab-e ârâm",
+    "meaning": "a calm night",
+    "level": 6,
+    "rank": 140,
+    "letters": ["ش", "ب", "آ", "ر", "ا", "م"],
+    "segments": ["شب", "آرام"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "شبِ آرام",
+      "explanation": "The second word describes the night, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph020",
+    "kind": "phrase",
+    "persian": "نام مادر",
+    "vowelled": "نامِ مادَر",
+    "transliteration": "nâm-e mâdar",
+    "meaning": "mother's name",
+    "level": 6,
+    "rank": 141,
+    "letters": ["ن", "ا", "م", "د", "ر"],
+    "segments": ["نام", "مادر"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "نامِ مادر",
+      "explanation": "The second word tells us whose name it is, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph021",
+    "kind": "phrase",
+    "persian": "ماشین جدید",
+    "vowelled": "ماشینِ جَدید",
+    "transliteration": "mâshin-e jadid",
+    "meaning": "the new car",
+    "level": 6,
+    "rank": 142,
+    "letters": ["م", "ا", "ش", "ی", "ن", "ج", "د"],
+    "segments": ["ماشین", "جدید"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "ماشینِ جدید",
+      "explanation": "The second word describes the car, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph022",
+    "kind": "phrase",
+    "persian": "مرد آمد",
+    "vowelled": "مَرد آمَد",
+    "transliteration": "mard âmad",
+    "meaning": "the man came",
+    "level": 6,
+    "rank": 143,
+    "letters": ["م", "ر", "د", "آ"],
+    "segments": ["مرد", "آمد"]
+  },
+  {
+    "id": "ph023",
+    "kind": "phrase",
+    "persian": "سال گذشته",
+    "vowelled": "سالِ گُذَشتِه",
+    "transliteration": "sâl-e gozashte",
+    "meaning": "last year",
+    "level": 6,
+    "rank": 144,
+    "letters": ["س", "ا", "ل", "گ", "ذ", "ش", "ت", "ه"],
+    "segments": ["سال", "گذشته"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "سالِ گذشته",
+      "explanation": "The second word identifies which year, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph024",
+    "kind": "phrase",
+    "persian": "زن رفت",
+    "vowelled": "زَن رَفت",
+    "transliteration": "zan raft",
+    "meaning": "the woman went",
+    "level": 6,
+    "rank": 145,
+    "letters": ["ز", "ن", "ر", "ف", "ت"],
+    "segments": ["زن", "رفت"]
+  },
+  {
+    "id": "ph025",
+    "kind": "phrase",
+    "persian": "جواب سؤال",
+    "vowelled": "جَوابِ سُؤال",
+    "transliteration": "javâb-e soâl",
+    "meaning": "the answer to the question",
+    "level": 6,
+    "rank": 146,
+    "letters": ["ج", "و", "ا", "ب", "س", "ؤ", "ل"],
+    "segments": ["جواب", "سؤال"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "جوابِ سؤال",
+      "explanation": "The second word identifies which answer, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph026",
+    "kind": "phrase",
+    "persian": "او گفت",
+    "vowelled": "اُو گُفت",
+    "transliteration": "u goft",
+    "meaning": "he / she said",
+    "level": 6,
+    "rank": 147,
+    "letters": ["ا", "و", "گ", "ف", "ت"],
+    "segments": ["او", "گفت"]
+  },
+  {
+    "id": "ph027",
+    "kind": "phrase",
+    "persian": "کار مهم",
+    "vowelled": "کارِ مُهِم",
+    "transliteration": "kâr-e mohem",
+    "meaning": "important work",
+    "level": 6,
+    "rank": 148,
+    "letters": ["ک", "ا", "ر", "م", "ه"],
+    "segments": ["کار", "مهم"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "کارِ مهم",
+      "explanation": "The second word describes the work, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph028",
+    "kind": "phrase",
+    "persian": "راه سخت",
+    "vowelled": "راهِ سَخت",
+    "transliteration": "râh-e sakht",
+    "meaning": "a difficult road",
+    "level": 6,
+    "rank": 149,
+    "letters": ["ر", "ا", "ه", "س", "خ", "ت"],
+    "segments": ["راه", "سخت"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "راهِ سخت",
+      "explanation": "The second word describes the road, so spoken -e connects them. It is usually not written."
+    }
+  },
+  {
+    "id": "ph029",
+    "kind": "phrase",
+    "persian": "خانهٔ ما",
+    "vowelled": "خانِهٔ ما",
+    "transliteration": "khâne-ye mâ",
+    "meaning": "our house",
+    "level": 6,
+    "rank": 150,
+    "letters": ["خ", "ا", "ن", "ه", "م"],
+    "segments": ["خانهٔ", "ما"],
+    "readingHelp": {
+      "label": "Why -ye?",
+      "markedPersian": "خانهٔ ما",
+      "explanation": "After the vowel at the end of khâne, ezafe is pronounced -ye. The small mark above the final letter writes it here."
+    }
+  },
+  {
+    "id": "ph030",
+    "kind": "phrase",
+    "persian": "غذای خوب",
+    "vowelled": "غَذایِ خوب",
+    "transliteration": "ghazâ-ye khub",
+    "meaning": "good food",
+    "level": 6,
+    "rank": 151,
+    "letters": ["غ", "ذ", "ا", "ی", "خ", "و", "ب"],
+    "segments": ["غذای", "خوب"],
+    "readingHelp": {
+      "label": "Why -ye?",
+      "markedPersian": "غذایِ خوب",
+      "explanation": "After the final vowel in ghazâ, ezafe is pronounced -ye and the letter yeh is written."
+    }
+  },
+  {
+    "id": "ph031",
+    "kind": "phrase",
+    "persian": "دنیای جدید",
+    "vowelled": "دُنیایِ جَدید",
+    "transliteration": "donyâ-ye jadid",
+    "meaning": "the new world",
+    "level": 6,
+    "rank": 152,
+    "letters": ["د", "ن", "ی", "ا", "ج"],
+    "segments": ["دنیای", "جدید"],
+    "readingHelp": {
+      "label": "Why -ye?",
+      "markedPersian": "دنیایِ جدید",
+      "explanation": "After the final vowel in donyâ, ezafe is pronounced -ye and the letter yeh is written."
+    }
+  },
+  {
+    "id": "ph032",
+    "kind": "phrase",
+    "persian": "زندگی آرام",
+    "vowelled": "زِندِگیِ آرام",
+    "transliteration": "zendegi-ye ârâm",
+    "meaning": "a calm life",
+    "level": 6,
+    "rank": 153,
+    "letters": ["ز", "ن", "د", "گ", "ی", "آ", "ر", "ا", "م"],
+    "segments": ["زندگی", "آرام"],
+    "readingHelp": {
+      "label": "Why -ye?",
+      "markedPersian": "زندگیِ آرام",
+      "explanation": "After the final vowel in zendegi, ezafe is pronounced -ye, even though no extra letter appears."
+    }
+  },
+  {
+    "id": "ph033",
+    "kind": "phrase",
+    "persian": "این سؤال مهم",
+    "vowelled": "این سُؤالِ مُهِم",
+    "transliteration": "in soâl-e mohem",
+    "meaning": "this important question",
+    "level": 6,
+    "rank": 154,
+    "letters": ["ا", "ی", "ن", "س", "ؤ", "ا", "ل", "م", "ه"],
+    "segments": ["این", "سؤال", "مهم"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "این سؤالِ مهم",
+      "explanation": "“This” comes before the noun without ezafe, while spoken -e connects the noun to the word describing it."
+    }
+  },
+  {
+    "id": "ph034",
+    "kind": "phrase",
+    "persian": "جواب این سؤال",
+    "vowelled": "جَوابِ این سُؤال",
+    "transliteration": "javâb-e in soâl",
+    "meaning": "the answer to this question",
+    "level": 6,
+    "rank": 155,
+    "letters": ["ج", "و", "ا", "ب", "ی", "ن", "س", "ؤ", "ل"],
+    "segments": ["جواب", "این", "سؤال"],
+    "readingHelp": {
+      "label": "Why -e?",
+      "markedPersian": "جوابِ این سؤال",
+      "explanation": "The following words identify which answer, so spoken -e connects javâb to the whole phrase “this question.”"
+    }
+  },
+  {
+    "id": "ph035",
+    "kind": "phrase",
+    "persian": "خانهٔ بزرگ ما",
+    "vowelled": "خانِهٔ بُزُرگِ ما",
+    "transliteration": "khâne-ye bozorg-e mâ",
+    "meaning": "our big house",
+    "level": 6,
+    "rank": 156,
+    "letters": ["خ", "ا", "ن", "ه", "ب", "ز", "ر", "گ", "م"],
+    "segments": ["خانهٔ", "بزرگ", "ما"],
+    "readingHelp": {
+      "label": "Why two connectors?",
+      "markedPersian": "خانهٔ بزرگِ ما",
+      "explanation": "Spoken -ye links “house” to “big,” then spoken -e links “big” to “our.” Ezafe can form a short chain."
+    }
+  },
+  {
+    "id": "ph036",
+    "kind": "phrase",
+    "persian": "کتاب جدید من",
+    "vowelled": "کِتابِ جَدیدِ مَن",
+    "transliteration": "ketâb-e jadid-e man",
+    "meaning": "my new book",
+    "level": 6,
+    "rank": 157,
+    "letters": ["ک", "ت", "ا", "ب", "ج", "د", "ی", "م", "ن"],
+    "segments": ["کتاب", "جدید", "من"],
+    "readingHelp": {
+      "label": "Why two -e sounds?",
+      "markedPersian": "کتابِ جدیدِ من",
+      "explanation": "One spoken -e links “book” to “new,” and another links “new” to “my.” Ezafe can form a short chain."
+    }
+  }
+]

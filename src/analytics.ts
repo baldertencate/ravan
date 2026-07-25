@@ -11,6 +11,8 @@ declare global {
 }
 
 const pendingEvents: Array<[string, EventProperties?]> = [];
+const analyticsDisabled =
+  new URLSearchParams(window.location.search).get("debug") === "1";
 
 function flushPendingEvents() {
   if (!window.umami) return;
@@ -20,6 +22,7 @@ function flushPendingEvents() {
 }
 
 export function initAnalytics() {
+  if (analyticsDisabled) return;
   if (window.umami) {
     flushPendingEvents();
     return;
@@ -30,6 +33,7 @@ export function initAnalytics() {
 }
 
 export function trackEvent(eventName: string, properties?: EventProperties) {
+  if (analyticsDisabled) return;
   if (window.umami) {
     window.umami.track(eventName, properties);
     return;
@@ -42,6 +46,7 @@ export function trackSessionEvent(
   eventName: string,
   properties?: EventProperties,
 ) {
+  if (analyticsDisabled) return;
   if (sessionStorage.getItem(storageKey)) return;
   sessionStorage.setItem(storageKey, "true");
   trackEvent(eventName, properties);

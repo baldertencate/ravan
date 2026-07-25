@@ -1,12 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import wordsData from "./data/words.json";
+import phrasesData from "./data/phrases.json";
 import vowelData from "./data/vowels.json";
 import patternsData from "./data/patterns.json";
 import { LETTER_ALIASES, PERSIAN_ALPHABET } from "./data/alphabet";
 import { trackEvent, trackSessionEvent } from "./analytics";
 
-type Mode = "meaning" | "transliteration";
+type Mode = "meaning" | "transliteration" | "segmentation";
 type Tab = "learn" | "journey" | "alphabet" | "words" | "about";
+type ReadingHelp = {
+  label: string;
+  markedPersian: string;
+  explanation: string;
+};
 type Word = {
   id: string;
   persian: string;
@@ -17,6 +23,9 @@ type Word = {
   rank: number;
   letters: string[];
   vowelled: string;
+  kind?: "word" | "phrase";
+  segments?: string[];
+  readingHelp?: ReadingHelp;
 };
 type WordProgress = {
   seen: number;
@@ -24,6 +33,7 @@ type WordProgress = {
   wrong: number;
   transliterationCorrect: number;
   meaningCorrect?: number;
+  segmentationCorrect?: number;
   lastAnswerCorrect?: boolean;
   interval: number;
   dueAt: number;
@@ -61,7 +71,12 @@ type Progress = {
   patternStats: Record<string, PatternProgress>;
   levelMastery: Record<string, LevelMastery>;
 };
-type Question = { word: Word; options: Word[]; mode: Mode };
+type QuestionOption = {
+  id: string;
+  label: string;
+  segments?: string[];
+};
+type Question = { word: Word; options: QuestionOption[]; mode: Mode };
 type Pattern = {
   id: string;
   form: string;
@@ -91,10 +106,14 @@ type InstallPromptEvent = Event & {
 const VOWELLED = vowelData as Record<string, string>;
 const WORDS = (wordsData as Omit<Word, "vowelled">[]).map((word) => ({
   ...word,
+  kind: "word" as const,
   vowelled: VOWELLED[word.id] ?? word.persian,
 }));
+const PHRASES = phrasesData as Word[];
+const ITEMS = [...WORDS, ...PHRASES];
 const PATTERNS = patternsData as Pattern[];
 const STORAGE_KEY = "ravan-progress-v1";
+const DEBUG_STORAGE_KEY = "ravan-debug-progress-v1";
 const VOWEL_KEY = "ravan-show-vowels-v1";
 const ONBOARDING_KEY = "ravan-onboarding-v1";
 const REMINDER_KEY = "ravan-reminder-v1";
@@ -102,12 +121,24 @@ const HAPTICS_KEY = "ravan-haptics-v1";
 const APP_URL = "https://baldertencate.github.io/ravan/app/";
 const LEVEL_UNLOCK_STREAK = 15;
 const LEVELS = [
-  { title: "First shapes", copy: "Short, frequent words · ا ب د م ن" },
-  { title: "Joining letters", copy: "Everyday connectors and core verbs" },
-  { title: "Useful patterns", copy: "Longer words and similar letterforms" },
-  { title: "Daily reading", copy: "Common nouns, places, and descriptions" },
-  { title: "Fluent recognition", copy: "Longer, less predictable vocabulary" },
+  { title: "First word shapes", copy: "Very short, high-frequency words" },
+  { title: "Common word shapes", copy: "Connectors, questions, and varied joining forms" },
+  { title: "Verbs and patterns", copy: "Core verbs, common endings, and longer forms" },
+  { title: "Everyday vocabulary", copy: "Longer nouns and varied letter combinations" },
+  { title: "Confident word recognition", copy: "Less predictable vocabulary, one word at a time" },
+  { title: "Reading short phrases", copy: "Word boundaries, ezafe, and short combinations" },
 ];
+const SEARCH_PARAMS = new URLSearchParams(window.location.search);
+const DEBUG_MODE = SEARCH_PARAMS.get("debug") === "1";
+const REQUESTED_DEBUG_LEVEL = Number(SEARCH_PARAMS.get("level"));
+const DEBUG_START_LEVEL =
+  DEBUG_MODE &&
+  Number.isInteger(REQUESTED_DEBUG_LEVEL) &&
+  REQUESTED_DEBUG_LEVEL >= 1 &&
+  REQUESTED_DEBUG_LEVEL <= LEVELS.length
+    ? REQUESTED_DEBUG_LEVEL
+    : null;
+const ACTIVE_STORAGE_KEY = DEBUG_MODE ? DEBUG_STORAGE_KEY : STORAGE_KEY;
 const MASTERY_STAGES = [
   {
     threshold: 10,
@@ -198,34 +229,53 @@ const emptyProgress: Progress = {
   levelMastery: {},
 };
 
+function freshProgress(): Progress {
+  return {
+    ...emptyProgress,
+    words: {},
+    patternStats: {},
+    levelMastery: {},
+    activeLevel: DEBUG_START_LEVEL ?? 1,
+    highestLevel: DEBUG_MODE ? LEVELS.length : 1,
+  };
+}
+
 function loadProgress(): Progress {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return emptyProgress;
+    const raw = localStorage.getItem(ACTIVE_STORAGE_KEY);
+    if (!raw) return freshProgress();
     const saved = { ...emptyProgress, ...JSON.parse(raw) } as Progress;
+    if (DEBUG_MODE) {
+      saved.highestLevel = LEVELS.length;
+      if (DEBUG_START_LEVEL) saved.activeLevel = DEBUG_START_LEVEL;
+    }
     if (!saved.levelMastery || !Object.keys(saved.levelMastery).length) {
-      const migrated: Record<string, LevelMastery> = {};
-      for (let level = 1; level < saved.highestLevel; level += 1) {
-        migrated[level] = {
-          currentStreak: 0,
-          bestStreak: LEVEL_UNLOCK_STREAK,
-          earnedThreshold: LEVEL_UNLOCK_STREAK,
-        };
-      }
-      migrated[saved.activeLevel] = {
-        currentStreak: saved.streak,
-        bestStreak:
-          saved.highestLevel === 1
-            ? Math.max(saved.streak, saved.bestStreak)
-            : saved.streak,
-        earnedThreshold:
-          masteryStage(
+      if (DEBUG_MODE) {
+        saved.levelMastery = {};
+      } else {
+        const migrated: Record<string, LevelMastery> = {};
+        for (let level = 1; level < saved.highestLevel; level += 1) {
+          migrated[level] = {
+            currentStreak: 0,
+            bestStreak: LEVEL_UNLOCK_STREAK,
+            earnedThreshold: LEVEL_UNLOCK_STREAK,
+          };
+        }
+        migrated[saved.activeLevel] = {
+          currentStreak: saved.streak,
+          bestStreak:
             saved.highestLevel === 1
               ? Math.max(saved.streak, saved.bestStreak)
               : saved.streak,
-          )?.threshold ?? 0,
-      };
-      saved.levelMastery = migrated;
+          earnedThreshold:
+            masteryStage(
+              saved.highestLevel === 1
+                ? Math.max(saved.streak, saved.bestStreak)
+                : saved.streak,
+            )?.threshold ?? 0,
+        };
+        saved.levelMastery = migrated;
+      }
     }
     saved.levelMastery = Object.fromEntries(
       Object.entries(saved.levelMastery).map(([level, mastery]) => [
@@ -239,7 +289,7 @@ function loadProgress(): Progress {
     );
     return saved;
   } catch {
-    return emptyProgress;
+    return freshProgress();
   }
 }
 
@@ -268,6 +318,13 @@ function wordIsMastered(stat?: WordProgress) {
   );
 }
 
+function itemIsMastered(item: Word, stat?: WordProgress) {
+  return (
+    wordIsMastered(stat) &&
+    (item.kind !== "phrase" || (stat?.segmentationCorrect ?? 0) >= 1)
+  );
+}
+
 function patternIsMastered(stat?: PatternProgress) {
   return Boolean(
     stat &&
@@ -278,22 +335,25 @@ function patternIsMastered(stat?: PatternProgress) {
 }
 
 function levelEvidence(progress: Progress, level = progress.activeLevel) {
-  const words = WORDS.filter((word) => word.level === level);
+  const items = ITEMS.filter((item) => item.level === level);
   const patterns = PATTERNS.filter((pattern) => pattern.level === level);
-  const masteredWords = words.filter((word) => wordIsMastered(progress.words[word.id])).length;
+  const masteredItems = items.filter((item) =>
+    itemIsMastered(item, progress.words[item.id]),
+  ).length;
   const masteredPatterns = patterns.filter((pattern) =>
     patternIsMastered(progress.patternStats[pattern.id]),
   ).length;
   return {
-    wordCount: words.length,
-    masteredWords,
+    itemCount: items.length,
+    masteredItems,
+    itemLabel: level === 6 ? "phrase" : "word",
     patternCount: patterns.length,
     masteredPatterns,
   };
 }
 
-function requiredWordsForStage(wordCount: number, coverage: number) {
-  return Math.ceil(wordCount * coverage);
+function requiredItemsForStage(itemCount: number, coverage: number) {
+  return Math.ceil(itemCount * coverage);
 }
 
 function highestEligibleMasteryStage(progress: Progress, level = progress.activeLevel) {
@@ -301,12 +361,12 @@ function highestEligibleMasteryStage(progress: Progress, level = progress.active
   const evidence = levelEvidence(progress, level);
   return (
     [...MASTERY_STAGES].reverse().find((stage) => {
-      const wordsReady =
-        evidence.masteredWords >= requiredWordsForStage(evidence.wordCount, stage.coverage);
+      const itemsReady =
+        evidence.masteredItems >= requiredItemsForStage(evidence.itemCount, stage.coverage);
       const patternsReady =
         stage.threshold < MASTERY_STAGES.at(-1)!.threshold ||
         evidence.masteredPatterns >= evidence.patternCount;
-      return mastery.bestStreak >= stage.threshold && wordsReady && patternsReady;
+      return mastery.bestStreak >= stage.threshold && itemsReady && patternsReady;
     }) ?? null
   );
 }
@@ -330,6 +390,7 @@ function isStandalone() {
 }
 
 function shouldShowOnboarding() {
+  if (DEBUG_MODE) return false;
   if (localStorage.getItem(ONBOARDING_KEY)) return false;
   try {
     const existing = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}") as Partial<Progress>;
@@ -386,15 +447,73 @@ function transliterationLabel(word: Word) {
 }
 
 function answerLabel(word: Word, mode: Mode) {
-  return mode === "transliteration" ? transliterationLabel(word) : word.meaning;
+  return mode === "transliteration"
+    ? transliterationLabel(word)
+    : mode === "meaning"
+      ? word.meaning
+      : word.persian;
+}
+
+function phraseSegmentationOptions(item: Word): QuestionOption[] {
+  const correctSegments = item.segments ?? item.persian.split(/\s+/);
+  const alternatives: string[][] = [];
+  const seen = new Set([correctSegments.join("\u0000")]);
+  const addAlternative = (segments: string[][]) => {
+    const candidate = segments.map((segment) => segment.join(""));
+    if (candidate.some((segment) => !segment)) return;
+    const key = candidate.join("\u0000");
+    if (seen.has(key)) return;
+    seen.add(key);
+    alternatives.push(candidate);
+  };
+  const characterSegments = correctSegments.map((segment) => [...segment]);
+
+  for (let boundary = 0; boundary < characterSegments.length - 1; boundary += 1) {
+    const left = characterSegments[boundary];
+    const right = characterSegments[boundary + 1];
+    if (left.length > 1) {
+      const movedRight = characterSegments.map((segment) => [...segment]);
+      movedRight[boundary + 1].unshift(movedRight[boundary].pop()!);
+      addAlternative(movedRight);
+    }
+    if (right.length > 1) {
+      const movedLeft = characterSegments.map((segment) => [...segment]);
+      movedLeft[boundary].push(movedLeft[boundary + 1].shift()!);
+      addAlternative(movedLeft);
+    }
+  }
+
+  if (alternatives.length < 3 && characterSegments[0].length > 2) {
+    const splitAt = Math.ceil(characterSegments[0].length / 2);
+    addAlternative([
+      characterSegments[0].slice(0, splitAt),
+      characterSegments[0].slice(splitAt),
+      ...characterSegments.slice(1),
+    ]);
+  }
+  if (alternatives.length < 3) {
+    addAlternative([characterSegments.flat()]);
+  }
+
+  return shuffle([
+    {
+      id: item.id,
+      label: correctSegments.join(" | "),
+      segments: correctSegments,
+    },
+    ...alternatives.slice(0, 3).map((segments, index) => ({
+      id: `${item.id}-boundary-${index}`,
+      label: segments.join(" | "),
+      segments,
+    })),
+  ]);
 }
 
 function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
-  const answerPool = WORDS.filter((word) => word.level <= progress.activeLevel);
-  const currentLevelPool = WORDS.filter((word) => word.level === progress.activeLevel);
-  const reviewPool = WORDS.filter((word) => word.level < progress.activeLevel);
+  const currentLevelPool = ITEMS.filter((word) => word.level === progress.activeLevel);
+  const reviewPool = ITEMS.filter((word) => word.level < progress.activeLevel);
   const growingWords = currentLevelPool.filter(
-    (word) => progress.words[word.id] && !wordIsMastered(progress.words[word.id]),
+    (word) => progress.words[word.id] && !itemIsMastered(word, progress.words[word.id]),
   );
   const unseenWords = currentLevelPool
     .filter((word) => !progress.words[word.id])
@@ -404,7 +523,7 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
     ...unseenWords.slice(0, Math.max(0, 8 - growingWords.length)),
   ];
   const masteredCurrentWords = currentLevelPool.filter((word) =>
-    wordIsMastered(progress.words[word.id]),
+    itemIsMastered(word, progress.words[word.id]),
   );
   const focusedCurrentPool =
     learningWave.length && (masteredCurrentWords.length === 0 || Math.random() < 0.85)
@@ -413,7 +532,9 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
         ? masteredCurrentWords
         : currentLevelPool;
   const fullPool =
-    reviewPool.length === 0 || Math.random() < 0.78
+    DEBUG_MODE ||
+    reviewPool.length === 0 ||
+    Math.random() < (progress.activeLevel === 6 ? 0.92 : 0.78)
       ? focusedCurrentPool
       : reviewPool;
   const pool =
@@ -423,13 +544,13 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const now = Date.now();
   const weighted = pool.map((word) => {
     const stat = progress.words[word.id];
-    if (!stat) return { word, weight: 15 + (101 - word.rank) / 30 };
+    if (!stat) return { word, weight: 15 + Math.max(0, 160 - word.rank) / 40 };
     const accuracy = stat.correct / Math.max(1, stat.seen);
     const overdue = Math.max(0, now - stat.dueAt) / 3_600_000;
     return {
       word,
       weight:
-        (wordIsMastered(stat) ? 1.5 : 9) +
+        (itemIsMastered(word, stat) ? 1.5 : 9) +
         (1 - accuracy) * 8 +
         Math.min(10, overdue),
     };
@@ -445,13 +566,24 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
   const mastery = stat ? stat.correct / Math.max(3, stat.seen) : 0;
   const globalFade = Math.min(0.88, progress.totalCorrect / 140);
   const meaningChance = Math.max(0.22, Math.min(0.95, 0.25 + mastery * 0.5 + globalFade));
+  const hasCorrectSegmentation =
+    target.kind !== "phrase" || (stat?.segmentationCorrect ?? 0) >= 1;
   const hasCorrectTransliteration = (stat?.transliterationCorrect ?? 0) >= 1;
   const needsMeaningEvidence = (stat?.meaningCorrect ?? 0) < 1;
-  const mode: Mode = !hasCorrectTransliteration
-    ? "transliteration"
-    : needsMeaningEvidence || Math.random() < meaningChance
-      ? "meaning"
-      : "transliteration";
+  const mode: Mode = !hasCorrectSegmentation
+    ? "segmentation"
+    : !hasCorrectTransliteration
+      ? "transliteration"
+      : needsMeaningEvidence || Math.random() < meaningChance
+        ? "meaning"
+        : "transliteration";
+  if (mode === "segmentation") {
+    return { word: target, options: phraseSegmentationOptions(target), mode };
+  }
+  const answerPool =
+    target.kind === "phrase"
+      ? PHRASES
+      : WORDS.filter((word) => word.level <= progress.activeLevel);
   const otherMode: Mode = mode === "meaning" ? "transliteration" : "meaning";
   const usedAnswers = new Set([
     ...answerVariants(target, mode),
@@ -465,7 +597,14 @@ function chooseQuestion(progress: Progress, excludeWordId?: string): Question {
       return true;
     })
     .slice(0, 3);
-  return { word: target, options: shuffle([target, ...distractors]), mode };
+  return {
+    word: target,
+    options: shuffle([target, ...distractors]).map((word) => ({
+      id: word.id,
+      label: answerLabel(word, mode),
+    })),
+    mode,
+  };
 }
 
 function choosePatternExercise(progress: Progress, excludePatternId?: string): PatternExercise {
@@ -525,8 +664,9 @@ export default function App() {
   const [answeredCorrectly, setAnsweredCorrectly] = useState<boolean | null>(null);
   const [session, setSession] = useState({ correct: 0, answers: 0 });
   const [showModeHelp, setShowModeHelp] = useState(false);
+  const [showReadingHelp, setShowReadingHelp] = useState(false);
   const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
-  const [exerciseKind, setExerciseKind] = useState<"word" | "pattern">("word");
+  const [exerciseKind, setExerciseKind] = useState<"item" | "pattern">("item");
   const [patternExercise, setPatternExercise] = useState<PatternExercise | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding);
   const [onboardingStep, setOnboardingStep] = useState(0);
@@ -543,7 +683,10 @@ export default function App() {
   const masteryCelebrationTimer = useRef<number | null>(null);
   const awardedStageRef = useRef("");
 
-  useEffect(() => localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)), [progress]);
+  useEffect(
+    () => localStorage.setItem(ACTIVE_STORAGE_KEY, JSON.stringify(progress)),
+    [progress],
+  );
   useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
   useEffect(() => localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder)), [reminder]);
   useEffect(() => localStorage.setItem(HAPTICS_KEY, String(haptics)), [haptics]);
@@ -650,9 +793,10 @@ export default function App() {
   const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
   const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
-  const requiredMasteredWords = upcomingMasteryStage
-    ? requiredWordsForStage(activeEvidence.wordCount, upcomingMasteryStage.coverage)
-    : activeEvidence.wordCount;
+  const requiredMasteredItems = upcomingMasteryStage
+    ? requiredItemsForStage(activeEvidence.itemCount, upcomingMasteryStage.coverage)
+    : activeEvidence.itemCount;
+  const activeItemPlural = `${activeEvidence.itemLabel}s`;
   const nextStageGoal = (() => {
     if (!upcomingMasteryStage) return "";
 
@@ -670,8 +814,8 @@ export default function App() {
         ? ` and unlock Level ${progress.activeLevel + 1}`
         : "";
     const requirements = [
-      `${upcomingMasteryStage.coverage === 1 ? "master all" : "master"} ${requiredMasteredWords} ${
-        requiredMasteredWords === 1 ? "word" : "words"
+      `${upcomingMasteryStage.coverage === 1 ? "master all" : "master"} ${requiredMasteredItems} ${
+        requiredMasteredItems === 1 ? activeEvidence.itemLabel : activeItemPlural
       }`,
       ...(upcomingMasteryStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
       activeEvidence.patternCount > 0
@@ -699,9 +843,15 @@ export default function App() {
   const averageSeconds = progress.totalAnswers
     ? (progress.totalMs / progress.totalAnswers / 1000).toFixed(1)
     : "—";
-  const mastered = Object.values(progress.words).filter(wordIsMastered).length;
-  const dueCount = WORDS.filter((word) => {
-    const stat = progress.words[word.id];
+  const masteredWords = WORDS.filter((word) =>
+    itemIsMastered(word, progress.words[word.id]),
+  ).length;
+  const masteredPhrases = PHRASES.filter((phrase) =>
+    itemIsMastered(phrase, progress.words[phrase.id]),
+  ).length;
+  const mastered = masteredWords + masteredPhrases;
+  const dueCount = ITEMS.filter((item) => {
+    const stat = progress.words[item.id];
     return stat && stat.dueAt <= Date.now();
   }).length;
   const matchedPattern = PATTERNS.find(
@@ -711,7 +861,7 @@ export default function App() {
       question.word.persian.includes(pattern.chunk),
   );
   const alphabetExerciseText =
-    exerciseKind === "word"
+    exerciseKind === "item"
       ? displayWord(question.word)
       : patternExercise
         ? patternExercise.stage === "context"
@@ -853,18 +1003,23 @@ export default function App() {
   }
 
   function resetApp() {
-    [STORAGE_KEY, VOWEL_KEY, ONBOARDING_KEY, REMINDER_KEY, HAPTICS_KEY].forEach((key) =>
-      localStorage.removeItem(key),
-    );
+    [
+      STORAGE_KEY,
+      DEBUG_STORAGE_KEY,
+      VOWEL_KEY,
+      ONBOARDING_KEY,
+      REMINDER_KEY,
+      HAPTICS_KEY,
+    ].forEach((key) => localStorage.removeItem(key));
     ["ravan-app-opened", "ravan-onboarding-started", "ravan-practice-started"].forEach((key) =>
       sessionStorage.removeItem(key),
     );
     window.location.reload();
   }
 
-  function answer(option: Word) {
+  function answer(optionId: string) {
     if (selected) return;
-    const correct = option.id === question.word.id;
+    const correct = optionId === question.word.id;
     const elapsed = Math.min(30_000, Date.now() - startedAt.current);
     const today = dayKey();
     trackSessionEvent("ravan-practice-started", "Practice Started", {
@@ -878,7 +1033,10 @@ export default function App() {
       });
     }
     if (!correct) wrongAnswerHaptic();
-    setSelected(option.id);
+    if (!correct && question.mode === "transliteration" && question.word.readingHelp) {
+      setShowReadingHelp(true);
+    }
+    setSelected(optionId);
     setAnsweredCorrectly(correct);
     setSession((current) => ({
       answers: current.answers + 1,
@@ -891,6 +1049,7 @@ export default function App() {
         wrong: 0,
         transliterationCorrect: 0,
         meaningCorrect: 0,
+        segmentationCorrect: 0,
         lastAnswerCorrect: true,
         interval: 0,
         dueAt: 0,
@@ -924,6 +1083,11 @@ export default function App() {
                 : question.mode === "meaning"
                   ? (previous.meaningCorrect ?? 0) + 1
                   : (previous.meaningCorrect ?? 0),
+            segmentationCorrect:
+              !correct && question.mode === "segmentation"
+                ? 0
+                : (previous.segmentationCorrect ?? 0) +
+                  (correct && question.mode === "segmentation" ? 1 : 0),
             lastAnswerCorrect: correct,
             interval,
             dueAt: Date.now() + interval * 86_400_000,
@@ -1029,17 +1193,21 @@ export default function App() {
 
   function nextQuestion() {
     const nextProgress = { ...progress };
-    const patternNext = progress.activeLevel >= 2 && (session.answers + 1) % 3 === 0;
+    const patternNext =
+      progress.activeLevel >= 2 &&
+      progress.activeLevel < 6 &&
+      (session.answers + 1) % 3 === 0;
     if (patternNext) {
       setPatternExercise(choosePatternExercise(nextProgress, patternExercise?.pattern.id));
       setExerciseKind("pattern");
     } else {
       setQuestion(chooseQuestion(nextProgress, question.word.id));
-      setExerciseKind("word");
+      setExerciseKind("item");
     }
     setSelected(null);
     setAnsweredCorrectly(null);
     setShowModeHelp(false);
+    setShowReadingHelp(false);
     startedAt.current = Date.now();
   }
 
@@ -1054,10 +1222,11 @@ export default function App() {
     };
     setProgress(nextProgress);
     setQuestion(chooseQuestion(nextProgress, question.word.id));
-    setExerciseKind("word");
+    setExerciseKind("item");
     setSelected(null);
     setAnsweredCorrectly(null);
     setShowModeHelp(false);
+    setShowReadingHelp(false);
     setSession({ correct: 0, answers: 0 });
     setLevelUnlockNotice(null);
     startedAt.current = Date.now();
@@ -1068,8 +1237,8 @@ export default function App() {
     function onKey(event: KeyboardEvent) {
       if (tab !== "learn") return;
       const index = Number(event.key) - 1;
-      if (!selected && exerciseKind === "word" && index >= 0 && index < question.options.length) {
-        answer(question.options[index]);
+      if (!selected && exerciseKind === "item" && index >= 0 && index < question.options.length) {
+        answer(question.options[index].id);
       }
       if (
         !selected &&
@@ -1086,9 +1255,9 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  const recentWords = useMemo(
+  const recentItems = useMemo(
     () =>
-      WORDS.filter((word) => progress.words[word.id]).sort(
+      ITEMS.filter((item) => progress.words[item.id]).sort(
         (a, b) => progress.words[b.id].seen - progress.words[a.id].seen,
       ),
     [progress.words],
@@ -1363,7 +1532,14 @@ export default function App() {
         {tab === "learn" && (
           <section className="learn-view">
             <div className="session-row">
-              <h1>{exerciseKind === "pattern" ? "Spot the pattern" : "Read the word"}</h1>
+              <h1>
+                {exerciseKind === "pattern"
+                  ? "Spot the pattern"
+                  : question.word.kind === "phrase"
+                    ? "Read the phrase"
+                    : "Read the word"}
+              </h1>
+              {DEBUG_MODE && <span className="debug-badge">TEST MODE · ALL LEVELS</span>}
             </div>
 
             <div className="progress-track" aria-label="Session progress">
@@ -1442,17 +1618,20 @@ export default function App() {
                   {upcomingMasteryStage && (
                     <div
                       className="graduation-track word-goal"
-                      aria-label={`${activeEvidence.masteredWords} of ${requiredMasteredWords} words mastered toward ${upcomingMasteryStage.name}`}
+                      aria-label={`${activeEvidence.masteredItems} of ${requiredMasteredItems} ${activeItemPlural} mastered toward ${upcomingMasteryStage.name}`}
                     >
                       <span
                         style={{
                           width: `${Math.min(
                             100,
-                            (activeEvidence.masteredWords / Math.max(1, requiredMasteredWords)) * 100,
+                            (activeEvidence.masteredItems / Math.max(1, requiredMasteredItems)) * 100,
                           )}%`,
                         }}
                       />
-                      <b>Words mastered {activeEvidence.masteredWords}/{requiredMasteredWords}</b>
+                      <b>
+                        {activeEvidence.itemLabel === "phrase" ? "Phrases" : "Words"} mastered{" "}
+                        {activeEvidence.masteredItems}/{requiredMasteredItems}
+                      </b>
                     </div>
                   )}
                   {upcomingMasteryStage &&
@@ -1477,19 +1656,26 @@ export default function App() {
               {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
             </div>
 
-            {exerciseKind === "word" ? (
+            {exerciseKind === "item" ? (
               <>
                 <article className={`word-card ${selected ? "answered" : ""}`}>
                   <div className="card-topline">
                     <button
                       type="button"
                       className={`mode-tag ${question.mode}`}
-                      onClick={() => setShowModeHelp((visible) => !visible)}
+                      onClick={() => {
+                        setShowModeHelp((visible) => !visible);
+                        setShowReadingHelp(false);
+                      }}
                       aria-expanded={showModeHelp}
                       aria-controls="question-mode-help"
                     >
                       <Icon name={question.mode === "meaning" ? "spark" : "learn"} />
-                      {question.mode === "meaning" ? "MEANING" : "SOUND BRIDGE"}
+                      {question.mode === "meaning"
+                        ? "MEANING"
+                        : question.mode === "segmentation"
+                          ? "WORD BOUNDARIES"
+                          : "SOUND BRIDGE"}
                       <span className="help-mark">?</span>
                     </button>
                     <button
@@ -1505,7 +1691,12 @@ export default function App() {
                   </div>
                   {showModeHelp && (
                     <div className="mode-explainer" id="question-mode-help">
-                      {question.mode === "transliteration" ? (
+                      {question.mode === "segmentation" ? (
+                        <>
+                          <strong>Find the words inside the phrase</strong>
+                          <span>A word can contain several disconnected visual blocks. Choose where the actual word boundary falls.</span>
+                        </>
+                      ) : question.mode === "transliteration" ? (
                         <>
                           <strong>A temporary bridge to sound</strong>
                           <span>You’re matching Persian script to its pronunciation. Ravân shows this less often as you improve, so you don’t become dependent on Latin letters.</span>
@@ -1518,11 +1709,49 @@ export default function App() {
                       )}
                     </div>
                   )}
-                  <div className="persian-word" lang="fa" dir="rtl">
+                  {showReadingHelp && question.word.readingHelp && (
+                    <div className="reading-explainer" id="reading-help">
+                      <button
+                        type="button"
+                        onClick={() => setShowReadingHelp(false)}
+                        aria-label="Close reading hint"
+                      >
+                        ×
+                      </button>
+                      <b lang="fa" dir="rtl">{question.word.readingHelp.markedPersian}</b>
+                      <strong>{question.word.readingHelp.label}</strong>
+                      <span>{question.word.readingHelp.explanation}</span>
+                    </div>
+                  )}
+                  <div
+                    className={`persian-word ${
+                      question.word.kind === "phrase" ? "phrase" : ""
+                    }`}
+                    lang="fa"
+                    dir="rtl"
+                  >
                     {!showVowels && matchedPattern
                       ? highlightPattern(question.word.persian, matchedPattern)
                       : displayWord(question.word)}
                   </div>
+                  {question.word.readingHelp &&
+                    (question.mode === "transliteration" || selected) && (
+                    <button
+                      type="button"
+                      className={`reading-help-trigger ${
+                        !progress.words[question.word.id] ? "new" : ""
+                      }`}
+                      onClick={() => {
+                        setShowReadingHelp((visible) => !visible);
+                        setShowModeHelp(false);
+                      }}
+                      aria-expanded={showReadingHelp}
+                      aria-controls="reading-help"
+                    >
+                      {!progress.words[question.word.id] && <span>NEW</span>}
+                      {question.word.readingHelp.label}
+                    </button>
+                    )}
                   {matchedPattern && (
                     <div className="word-pattern-note">
                       <span lang="fa" dir="rtl">{matchedPattern.form}</span>
@@ -1531,7 +1760,12 @@ export default function App() {
                     </div>
                   )}
                   <p className="prompt">
-                    Choose the correct {question.mode === "meaning" ? "meaning" : "pronunciation"}
+                    Choose the correct{" "}
+                    {question.mode === "meaning"
+                      ? "meaning"
+                      : question.mode === "segmentation"
+                        ? "word boundaries"
+                        : "pronunciation"}
                   </p>
                 </article>
                 <div className="answers" aria-label="Answer options">
@@ -1548,11 +1782,29 @@ export default function App() {
                       <button
                         key={option.id}
                         className={`answer ${state}`}
-                        onClick={() => answer(option)}
+                        onClick={() => answer(option.id)}
                         disabled={!!selected}
                       >
                         <span className="answer-key">{index + 1}</span>
-                        <span>{answerLabel(option, question.mode)}</span>
+                        {question.mode === "segmentation" && option.segments ? (
+                          <span
+                            className="boundary-option"
+                            lang="fa"
+                            dir="rtl"
+                            aria-label={option.segments.join(", word boundary, ")}
+                          >
+                            {option.segments.map((segment, segmentIndex) => (
+                              <span key={`${segment}-${segmentIndex}`}>
+                                <b>{segment}</b>
+                                {segmentIndex < option.segments!.length - 1 && (
+                                  <i aria-hidden="true">|</i>
+                                )}
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span>{option.label}</span>
+                        )}
                         {state === "correct" && <Icon name="check" />}
                       </button>
                     );
@@ -1618,7 +1870,7 @@ export default function App() {
                 <div>
                   <strong>{answeredCorrectly ? "That’s it." : "Not quite — keep this one close."}</strong>
                   <span>
-                    {exerciseKind === "word" ? (
+                    {exerciseKind === "item" ? (
                       <>
                         <b lang="fa" dir="rtl">{displayWord(question.word)}</b>
                         {" · "}{transliterationLabel(question.word)} · {question.word.meaning}
@@ -1640,7 +1892,11 @@ export default function App() {
                 <Icon name="spark" />
                 <span>
                   <strong>Adapting to you.</strong>{" "}
-                  {exerciseKind === "pattern" ? "Missed patterns return sooner." : "Missed words return sooner."}
+                  {exerciseKind === "pattern"
+                    ? "Missed patterns return sooner."
+                    : question.word.kind === "phrase"
+                      ? "Missed phrases return sooner."
+                      : "Missed words return sooner."}
                 </span>
               </div>
             )}
@@ -1655,15 +1911,28 @@ export default function App() {
               <p>Small, well-timed reviews turn unfamiliar marks into words you simply know.</p>
             </div>
             <div className="stats-grid">
-              <div className="stat-card accent"><span>Accuracy</span><strong>{accuracy}%</strong><small>{progress.totalAnswers} answers</small></div>
+              <div className="stat-card accent">
+                <span>Accuracy</span>
+                <strong>{accuracy}%</strong>
+                <small>
+                  {progress.totalAnswers} {progress.totalAnswers === 1 ? "answer" : "answers"}
+                </small>
+              </div>
               <div className="stat-card"><span>Average speed</span><strong>{averageSeconds}<em>s</em></strong><small>per answer</small></div>
               <div className="stat-card"><span>Best streak</span><strong>{progress.bestStreak}</strong><small>correct in a row</small></div>
-              <div className="stat-card"><span>Words mastered</span><strong>{mastered}</strong><small>sound and meaning confirmed</small></div>
+              <div className="stat-card">
+                <span>Items mastered</span>
+                <strong>{mastered}</strong>
+                <small>{masteredWords} words · {masteredPhrases} phrases</small>
+              </div>
             </div>
             <div className="section-card">
               <div className="section-heading">
                 <div><span className="eyebrow">LEARNING PATH</span><h2>Practice and make each flower grow</h2></div>
-                <span>{WORDS.filter((w) => w.level <= unlockedLevel).length} words available</span>
+                <span>
+                  {WORDS.filter((word) => word.level <= unlockedLevel).length} words
+                  {unlockedLevel >= 6 ? ` · ${PHRASES.length} phrases` : ""}
+                </span>
               </div>
               <div className="level-list">
                 {LEVELS.map((level, index) => {
@@ -1674,18 +1943,19 @@ export default function App() {
                   const stage = masteryStage(mastery.earnedThreshold);
                   const evidence = levelEvidence(progress, number);
                   const nextStage = nextMasteryStage(mastery.earnedThreshold);
-                  const nextWordTarget = nextStage
-                    ? requiredWordsForStage(evidence.wordCount, nextStage.coverage)
-                    : evidence.wordCount;
+                  const nextItemTarget = nextStage
+                    ? requiredItemsForStage(evidence.itemCount, nextStage.coverage)
+                    : evidence.itemCount;
+                  const itemPlural = `${evidence.itemLabel}s`;
                   const levelProgressLabel = stage
                     ? nextStage
                       ? nextStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
-                        evidence.masteredWords >= nextWordTarget &&
+                        evidence.masteredItems >= nextItemTarget &&
                         evidence.patternCount > 0
                         ? `${stage.name} · ${evidence.masteredPatterns}/${evidence.patternCount} patterns to Bouquet`
-                        : `${stage.name} · ${evidence.masteredWords}/${nextWordTarget} words to ${nextStage.name}`
+                        : `${stage.name} · ${evidence.masteredItems}/${nextItemTarget} ${itemPlural} to ${nextStage.name}`
                       : `${stage.name} · complete`
-                    : `${evidence.masteredWords}/${nextWordTarget} words to ${
+                    : `${evidence.masteredItems}/${nextItemTarget} ${itemPlural} to ${
                         nextStage?.name ?? "Sprout"
                       }`;
                   return (
@@ -1701,10 +1971,11 @@ export default function App() {
                         };
                         setProgress(nextProgress);
                         setQuestion(chooseQuestion(nextProgress));
-                        setExerciseKind("word");
+                        setExerciseKind("item");
                         setSelected(null);
                         setAnsweredCorrectly(null);
                         setShowModeHelp(false);
+                        setShowReadingHelp(false);
                         setSession({ correct: 0, answers: 0 });
                         setTab("learn");
                         startedAt.current = Date.now();
@@ -1747,8 +2018,8 @@ export default function App() {
                   </span>
                 ))}
                 <p>
-                  Each flower needs both the best streak shown and mastered level words. Bouquet
-                  also requires every level pattern. Earned flowers never shrink.
+                  Each flower needs both the best streak shown and mastered level items. Bouquet
+                  also requires every pattern assigned to that level. Earned flowers never shrink.
                 </p>
               </div>
             </div>
@@ -1857,37 +2128,52 @@ export default function App() {
         {tab === "words" && (
           <section className="words-view">
             <div className="page-intro compact">
-              <span className="eyebrow">WORD GARDEN</span>
-              <h1>{recentWords.length ? "Words you’ve met" : "Your first words await."}</h1>
+              <span className="eyebrow">WORD & PHRASE GARDEN</span>
+              <h1>{recentItems.length ? "Reading you’ve met" : "Your first words await."}</h1>
               <p>{dueCount} due now · {mastered} mastered · stored only on this device</p>
             </div>
             <div className="word-table">
-              {recentWords.length === 0 ? (
+              {recentItems.length === 0 ? (
                 <button className="empty-state" onClick={() => setTab("learn")}>
                   <span lang="fa" dir="rtl">آماده‌ای؟</span>
                   <strong>Ready?</strong>
                   <small>Start a short practice round</small>
                 </button>
-              ) : recentWords.map((word) => {
+              ) : recentItems.map((word) => {
                 const stat = progress.words[word.id];
                 const accuracy = Math.round((stat.correct / stat.seen) * 100);
+                const masteryStepCount = word.kind === "phrase" ? 3 : 2;
                 const masterySteps =
                   stat.lastAnswerCorrect === false
                     ? 0
-                    : Number(stat.transliterationCorrect >= 1) +
+                    : (word.kind === "phrase"
+                        ? Number((stat.segmentationCorrect ?? 0) >= 1)
+                        : 0) +
+                      Number(stat.transliterationCorrect >= 1) +
                       Number((stat.meaningCorrect ?? 0) >= 1);
-                const masteryScore = masterySteps * 50;
+                const masteryScore = (masterySteps / masteryStepCount) * 100;
                 return (
                   <div className="word-row" key={word.id}>
                     <div
-                      className={`mini-ring ${masterySteps === 2 ? "complete" : ""}`}
+                      className={`mini-ring ${
+                        masterySteps === masteryStepCount ? "complete" : ""
+                      }`}
                       style={{ "--score": `${masteryScore * 3.6}deg` } as React.CSSProperties}
-                      aria-label={`${masterySteps} of 2 word mastery steps complete`}
+                      aria-label={`${masterySteps} of ${masteryStepCount} ${
+                        word.kind === "phrase" ? "phrase" : "word"
+                      } mastery steps complete`}
                     >
-                      <span>{masterySteps === 2 ? "✓" : `${masterySteps}/2`}</span>
+                      <span>
+                        {masterySteps === masteryStepCount
+                          ? "✓"
+                          : `${masterySteps}/${masteryStepCount}`}
+                      </span>
                     </div>
                     <div>
-                      <strong lang="fa" dir="rtl">{displayWord(word)}</strong>
+                      <strong lang="fa" dir="rtl">
+                        {displayWord(word)}
+                        {word.kind === "phrase" && <small className="phrase-label">PHRASE</small>}
+                      </strong>
                       <span>{transliterationLabel(word)} · {word.meaning}</span>
                     </div>
                     <div>

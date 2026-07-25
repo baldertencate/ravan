@@ -8,6 +8,7 @@ installable practice app lives separately at `/app/`.
 ## What it does
 
 - Builds from short, frequent letter patterns toward longer everyday words
+- Adds a sixth level of short phrases, including word-boundary recognition and optional ezafe help
 - Uses spaced repetition: misses return quickly; successful words wait longer
 - Introduces English-meaning questions only after that word has first been matched to its transliteration correctly; a missed meaning relocks the word until its pronunciation is answered correctly again
 - Teaches recurring visual chunks such as `می‌ـ`, `نمی‌ـ`, plural `ـها`, and common verb endings through scored questions—first in isolation, then highlighted inside real words
@@ -28,6 +29,16 @@ The intended first native release keeps the existing React learning experience a
 ## Word data
 
 The starter set lives at `src/data/words.json`. Each entry has a stable `id`, Persian spelling, formal transliteration, English meaning, difficulty level, frequency rank, and letter list. An optional `spokenTransliteration` records a common colloquial Iranian pronunciation when it differs from the formal reading. The current 121-word set includes every Persian letter in at least two quiz words. Optional pedagogical vowel forms are keyed by the same IDs in `src/data/vowels.json`; words without an entry safely fall back to their standard spelling. Replace or extend these files to scale toward 500+ words.
+
+Short multi-word reading items live separately in `src/data/phrases.json`. Phrase entries add
+explicit word segments and optional phrase-specific reading help for ezafe and other potentially
+confusing pronunciation details.
+
+## Test mode
+
+Open `/app/?debug=1` to use isolated test progress with every level unlocked. Add a level number to
+open directly at that level, for example `/app/?debug=1&level=6`. Test-mode activity is stored
+separately from normal learning progress and is excluded from explicit analytics events.
 
 ## Run locally
 

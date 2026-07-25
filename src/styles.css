@@ -618,6 +618,10 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 
 main { padding: 30px 22px 10px; }
 .session-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
+.debug-badge {
+  padding: 6px 8px; border-radius: 8px; background: #f7dfd4; color: #93482d;
+  font-size: 8px; font-weight: 800; letter-spacing: .09em; white-space: nowrap;
+}
 .eyebrow { font-size: 10px; letter-spacing: .16em; font-weight: 700; color: #7a8178; }
 h1, h2, p { margin-top: 0; }
 h1 { font-family: Georgia, serif; font-size: clamp(30px, 7vw, 42px); font-weight: 500; margin: 5px 0 0; letter-spacing: -.035em; }
@@ -888,6 +892,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .mode-tag.meaning { background: var(--sage); color: var(--green); }
 .mode-tag.transliteration { background: #f7e2d6; color: #a15332; }
+.mode-tag.segmentation { background: #e4e9ef; color: #465d71; }
 .help-mark {
   width: 15px; height: 15px; display: grid; place-items: center; border-radius: 50%;
   background: rgba(255, 255, 255, .65); font-size: 9px; letter-spacing: 0;
@@ -900,10 +905,40 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .mode-explainer strong { font-size: 11px; }
 .mode-explainer span { color: rgba(255, 255, 255, .78); font-size: 10px; line-height: 1.45; }
+.reading-explainer {
+  position: absolute; z-index: 4; inset: 56px 20px auto;
+  min-height: 122px; padding: 14px 38px 14px 15px;
+  display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 3px 12px;
+  border-radius: 14px; background: #fff8ed; color: var(--ink);
+  border: 1px solid #e6c7a9; box-shadow: 0 13px 30px rgba(54, 45, 34, .16);
+}
+.reading-explainer > button {
+  position: absolute; top: 7px; right: 9px; width: 26px; height: 26px;
+  border: 0; background: none; color: var(--muted); font-size: 19px; cursor: pointer;
+}
+.reading-explainer b {
+  grid-row: 1 / 3; color: var(--green-dark); font-family: "Noto Naskh Arabic", serif;
+  font-size: 27px; line-height: 1.3; text-align: center;
+}
+.reading-explainer strong { align-self: end; color: var(--orange); font-size: 10px; }
+.reading-explainer span {
+  align-self: start; color: var(--muted); font-size: 9px; line-height: 1.45;
+}
 .persian-word {
   font-family: "Noto Naskh Arabic", serif; text-align: center;
   font-size: clamp(66px, 20vw, 102px); font-weight: 600; line-height: 1.3;
   color: #1f3e2e; margin: auto 0 2px; padding: 10px;
+}
+.persian-word.phrase { font-size: clamp(46px, 14vw, 72px); }
+.reading-help-trigger {
+  align-self: center; margin: -7px auto 6px; padding: 4px 7px;
+  border: 0; background: none; color: var(--orange);
+  font-size: 9px; font-weight: 700; text-decoration: underline;
+  text-underline-offset: 3px; cursor: pointer; z-index: 1;
+}
+.reading-help-trigger span {
+  margin-right: 5px; padding: 2px 4px; border-radius: 4px;
+  background: #f7e2d6; font-size: 7px; letter-spacing: .08em; text-decoration: none;
 }
 .persian-word mark, .pattern-question-word mark {
   color: var(--orange); background: #f9dfd1; border-radius: .12em; padding: 0 .04em;
@@ -964,6 +999,16 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .answer.wrong { background: #fae6df; border-color: #d98c70; color: #873f29; }
 .answer.dim { opacity: .45; }
 .answer:disabled { cursor: default; }
+.boundary-option {
+  min-width: 0; display: flex; direction: rtl; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 6px; color: var(--ink); font-family: "Noto Naskh Arabic", serif;
+  font-size: 22px; font-weight: 600; line-height: 1.2;
+}
+.boundary-option > span { display: inline-flex; direction: rtl; align-items: center; gap: 6px; }
+.boundary-option b { font: inherit; }
+.boundary-option i {
+  color: var(--orange); font-family: "DM Sans", sans-serif; font-size: 13px; font-style: normal;
+}
 
 .adapt-note { color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 11px; margin: 22px 0 0; }
 .adapt-note > span:first-child { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; background: var(--sage); color: var(--green); }
@@ -1202,6 +1247,12 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .mini-ring.complete { --mastery-color: var(--green); color: var(--green-dark); }
 .word-row > div:nth-child(2), .word-row > div:nth-child(3) { display: flex; flex-direction: column; }
 .word-row > div:nth-child(2) strong { font-family: "Noto Naskh Arabic", serif; font-size: 22px; line-height: 1.3; }
+.word-row .phrase-label {
+  display: inline-block; margin-inline-start: 7px; padding: 2px 4px;
+  border-radius: 4px; background: var(--sage); color: var(--green-dark);
+  font-family: "DM Sans", sans-serif; font-size: 6px; letter-spacing: .08em;
+  vertical-align: middle;
+}
 .word-row span, .word-row small { color: var(--muted); font-size: 10px; }
 .word-row > div:last-child { text-align: right; }
 .word-row > div:last-child small { color: var(--orange); font-weight: 700; }
@@ -1370,6 +1421,14 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     font-size: 25px;
   }
 
+  .debug-badge {
+    max-width: 112px;
+    padding: 5px 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 7px;
+  }
+
   .progress-track {
     margin-bottom: 10px;
   }
@@ -1441,6 +1500,28 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     line-height: 1.15;
   }
 
+  .persian-word.phrase {
+    font-size: clamp(34px, 10.5vw, 47px);
+    line-height: 1.25;
+  }
+
+  .reading-help-trigger {
+    margin: -3px auto 3px;
+    font-size: 8px;
+  }
+
+  .reading-explainer {
+    inset: 45px 12px auto;
+    min-height: 96px;
+    padding: 10px 31px 10px 10px;
+    grid-template-columns: 62px 1fr;
+    gap: 2px 9px;
+  }
+
+  .reading-explainer b { font-size: 22px; }
+  .reading-explainer strong { font-size: 9px; }
+  .reading-explainer span { font-size: 8px; }
+
   .pattern-question-word {
     font-size: clamp(46px, 14vw, 62px);
     line-height: 1.2;
@@ -1472,6 +1553,13 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     width: 21px;
     height: 21px;
   }
+
+  .boundary-option {
+    gap: 4px;
+    font-size: 18px;
+  }
+
+  .boundary-option > span { gap: 4px; }
 
   .feedback {
     position: static;
