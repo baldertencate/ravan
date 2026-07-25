@@ -36,7 +36,7 @@ export default function Landing() {
         <section className="landing-hero">
           <div className="landing-hero-copy">
             <span className="eyebrow">INTERACTIVE FARSI READING PRACTICE</span>
-            <h1>Helpful practice for learning to read Farsi.</h1>
+            <h1>Helpful practice for learning to read Farsi (Persian).</h1>
             <p>
               Ravân complements courses, tutors, textbooks, and language apps with interactive
               exercises that track and grow your Persian reading skills.
