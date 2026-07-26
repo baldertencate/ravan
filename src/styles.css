@@ -606,52 +606,45 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .graduation-copy strong { font-size: 12px; }
 .graduation-copy span { color: var(--muted); font-size: 9px; }
-.mastery-goals { display: grid; gap: 5px; }
-.streak-stats {
-  min-height: 28px; display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+.mastery-goals { display: grid; gap: 7px; }
+.streak-progress,
+.mastery-item-progress {
+  min-width: 0; display: grid; grid-template-columns: 108px minmax(72px, 1fr);
+  align-items: center; gap: 8px;
 }
-.streak-stat {
-  min-width: 0; padding: 0; display: inline-flex; align-items: center; gap: 4px;
-  color: var(--green-dark); font-variant-numeric: tabular-nums;
+.progress-label {
+  color: var(--muted); font-size: 9px; font-weight: 700; white-space: nowrap;
 }
-.streak-stat.current,
-.streak-stat.best {
-  flex: 0 0 auto;
+.progress-label strong {
+  color: var(--green-dark); font-size: 11px;
 }
-.streak-stat span {
-  color: var(--muted); font-size: 7px; font-weight: 800; letter-spacing: .04em;
+.progress-label small {
+  margin-inline-start: 5px; color: #829486; font-size: 8px; font-weight: 700;
 }
-.streak-stat strong {
-  width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%;
-  font-size: 12px; line-height: 1;
-}
-.streak-stat.current strong { background: var(--green); color: white; }
-.streak-stat.best strong {
-  background: #dce8dd; color: var(--green-dark);
-  box-shadow: inset 0 0 0 1px rgba(46, 93, 69, .12);
-}
-.streak-stat small {
-  color: #526b57; font-size: 7px; font-weight: 800; white-space: nowrap;
-}
-.streak-stat.best.goal-met strong { background: #c7dcc9; }
-.streak-stat.best.goal-met small { color: var(--green-dark); }
 .graduation-track {
-  height: 16px; position: relative; background: rgba(46, 93, 69, .13);
-  border-radius: 99px; overflow: hidden;
+  height: 10px; position: relative; background: rgba(46, 93, 69, .13);
+  border-radius: 99px;
 }
-.graduation-track span {
+.graduation-track > span {
   height: 100%; display: block; border-radius: inherit; background: var(--orange);
   transition: width .25s ease;
 }
-.graduation-track b {
-  position: absolute; z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  max-width: calc(100% - 8px); padding: 1px 6px; border-radius: 99px;
-  background: rgba(255, 253, 248, .9); box-shadow: 0 0 0 1px rgba(51, 73, 59, .08);
-  color: #27392d; font-size: 8px; line-height: 12px; letter-spacing: .04em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+.streak-goal > span {
+  position: absolute; left: 0; top: 0;
 }
-.graduation-track.word-goal span { background: var(--green); }
-.graduation-card.ready .graduation-track span { background: var(--green); }
+.streak-goal .streak-best-fill {
+  background: #a9c7ae;
+}
+.streak-goal .streak-current-fill {
+  height: 6px; top: 2px; background: var(--green);
+}
+.stage-progress-marker {
+  width: 7px; height: 7px; position: absolute; z-index: 2; top: 50%;
+  border: 1px solid rgba(255, 253, 248, .95); background: #e5a041;
+  box-shadow: 0 0 0 1px rgba(119, 78, 24, .12);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.graduation-track.word-goal > span { background: var(--green); }
 .graduate-button {
   border: 0; border-radius: 11px; padding: 10px 12px; background: var(--green);
   color: white; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap;
@@ -919,13 +912,16 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .feedback { margin-top: 14px; padding: 15px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .feedback.success { background: #dfeadd; }
 .feedback.retry { background: #f7dfd4; }
-.feedback-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 3px; font-size: 11px; }
-.feedback strong { font-size: 13px; }
-.feedback b { font-family: "Noto Naskh Arabic", serif; font-size: 16px; }
-.feedback-answer-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.feedback-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 3px; font-size: 12px; }
+.feedback strong { font-size: 14px; }
+.feedback b { font-family: "Noto Naskh Arabic", serif; font-size: 18px; }
+.feedback-answer-line {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
+  font-size: 13px; line-height: 1.4;
+}
 .feedback-reading-help {
   padding: 0; border: 0; background: none; color: #9d4b2b;
-  font-size: 9px; font-weight: 700; text-decoration: underline;
+  font-size: 11px; font-weight: 700; text-decoration: underline;
   text-underline-offset: 3px; cursor: pointer;
 }
 .feedback-reading-explainer {
@@ -942,7 +938,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   align-self: end; color: var(--orange); font-size: 9px;
 }
 .feedback-reading-explainer span {
-  align-self: start; color: var(--muted); font-size: 8px; line-height: 1.45;
+  align-self: start; color: var(--muted); font-size: 10px; line-height: 1.45;
 }
 .feedback-continue {
   padding: 11px 14px; border: 0; border-radius: 11px;
@@ -1439,7 +1435,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .graduation-track {
-    height: 17px;
+    height: 10px;
+  }
+
+  .progress-label {
+    font-size: 10px;
   }
 
   .word-card {
@@ -1528,9 +1528,9 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .feedback-answer-line > span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
 
   .exercise-alphabet-card { padding: 12px; border-radius: 15px; }
@@ -1552,8 +1552,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .onboarding-progress > span,
   .intro-list-label,
   .current-level-number > span,
-  .streak-stat span,
-  .streak-stat small,
   .mastery-key small,
   .mastery-key p,
   .pattern-tile > div span,
@@ -1570,7 +1568,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .reminder-controls label > span,
   .calendar-file-action,
   .about-replay-link,
-  .graduation-track b,
   .word-pattern-note,
   .pattern-stage,
   .feedback-reading-help,

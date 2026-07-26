@@ -1589,7 +1589,11 @@ export default function App() {
                   از صدف دُری گزین گر عاقلی
                 </p>
                 <footer>
-                  <span>“You saw the outward form and missed the meaning; if you are wise, choose the pearl from the shell.”</span>
+                  <span>
+                    “You saw the outward form and missed the meaning;
+                    <br />
+                    if you are wise, choose the pearl from the shell.”
+                  </span>
                   <div className="literary-attribution">
                     <cite>Rumi</cite>
                     <small>13th-century Persian poet and Sufi mystic</small>
@@ -1866,55 +1870,85 @@ export default function App() {
                   </span>
                 </div>
                 <div className="mastery-goals">
-                  <div
-                    className="streak-stats"
-                    aria-label={
-                      upcomingMasteryStage
-                        ? `Best streak ${activeMastery.bestStreak}; ${masteryTarget} required; current streak ${activeMastery.currentStreak}`
-                        : `Current answer streak ${activeMastery.currentStreak}; personal best ${activeMastery.bestStreak}`
-                    }
-                  >
-                    <div className="streak-stat current">
-                      <span>Current streak</span>
-                      <strong>{activeMastery.currentStreak}</strong>
-                    </div>
-                    <div
-                      className={`streak-stat best ${
-                        upcomingMasteryStage && activeMastery.bestStreak >= masteryTarget
-                          ? "goal-met"
-                          : ""
-                      }`}
-                    >
-                      <span>Best streak</span>
-                      <strong>{activeMastery.bestStreak}</strong>
-                      {upcomingMasteryStage && (
-                        <small>
-                          {activeMastery.bestStreak >= masteryTarget
-                            ? `✓ Goal ${masteryTarget} met`
-                            : `Goal ${masteryTarget}`}
-                        </small>
-                      )}
-                    </div>
-                  </div>
-                  {upcomingMasteryStage && (
+                  <div className="mastery-item-progress">
+                    <span className="progress-label">
+                      {activeEvidence.itemLabel === "phrase" ? "Phrases" : "Words"} mastered:{" "}
+                      <strong>{activeEvidence.masteredItems}</strong>
+                    </span>
                     <div
                       className="graduation-track word-goal"
-                      aria-label={`${activeEvidence.masteredItems} of ${requiredMasteredItems} ${activeItemPlural} mastered toward ${upcomingMasteryStage.name}`}
+                      aria-label={`${activeEvidence.masteredItems} of ${activeEvidence.itemCount} ${activeItemPlural} mastered across Level ${progress.activeLevel}`}
                     >
                       <span
                         style={{
                           width: `${Math.min(
                             100,
-                            (activeEvidence.masteredItems / Math.max(1, requiredMasteredItems)) * 100,
+                            (activeEvidence.masteredItems / Math.max(1, activeEvidence.itemCount)) * 100,
                           )}%`,
                         }}
                       />
-                      <b>
-                        {activeEvidence.itemLabel === "phrase" ? "Phrases" : "Words"} mastered{" "}
-                        {activeEvidence.masteredItems}/{requiredMasteredItems}
-                      </b>
+                      {MASTERY_STAGES.slice(0, -1).map((stage) => {
+                        const stageItemTarget = requiredItemsForStage(
+                          activeEvidence.itemCount,
+                          stage.coverage,
+                        );
+                        return (
+                          <i
+                            key={stage.name}
+                            className="stage-progress-marker"
+                            style={{
+                              left: `${Math.min(
+                                100,
+                                (stageItemTarget / Math.max(1, activeEvidence.itemCount)) * 100,
+                              )}%`,
+                            }}
+                            title={`${stage.name}: ${stageItemTarget} ${activeItemPlural}`}
+                            aria-hidden="true"
+                          />
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+                  <div className="streak-progress">
+                    <span className="progress-label">
+                      Streak: <strong>{activeMastery.currentStreak}</strong>
+                      <small>Best {activeMastery.bestStreak}</small>
+                    </span>
+                    <div
+                      className="graduation-track streak-goal"
+                      aria-label={`Current streak ${activeMastery.currentStreak}; best streak ${activeMastery.bestStreak}; Bouquet bar maximum ${MASTERY_STAGES.at(-1)!.threshold}`}
+                    >
+                      <span
+                        className="streak-best-fill"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (activeMastery.bestStreak / MASTERY_STAGES.at(-1)!.threshold) * 100,
+                          )}%`,
+                        }}
+                      />
+                      <span
+                        className="streak-current-fill"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (activeMastery.currentStreak / MASTERY_STAGES.at(-1)!.threshold) * 100,
+                          )}%`,
+                        }}
+                      />
+                      {MASTERY_STAGES.slice(0, -1).map((stage) => (
+                        <i
+                          key={stage.name}
+                          className="stage-progress-marker"
+                          style={{
+                            left: `${(stage.threshold / MASTERY_STAGES.at(-1)!.threshold) * 100}%`,
+                          }}
+                          title={`${stage.name}: streak ${stage.threshold}`}
+                          aria-hidden="true"
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
               {canGraduate && (
@@ -2476,7 +2510,11 @@ export default function App() {
                   به زیر آوری چرخ نیلوفری را
                 </p>
                 <footer>
-                  <span>“If your tree bears the fruit of knowledge, you can bring the azure heavens within reach.”</span>
+                  <span>
+                    “If your tree bears the fruit of knowledge,
+                    <br />
+                    you can bring the azure heavens within reach.”
+                  </span>
                   <div className="literary-attribution">
                     <cite>Naser Khosrow</cite>
                     <small>Poet, philosopher, and ardent promoter of the Persian language</small>
