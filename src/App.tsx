@@ -1035,18 +1035,10 @@ export default function App() {
   const nextStageGoal = (() => {
     if (!upcomingMasteryStage) return "";
 
-    const action =
-      upcomingMasteryStage.name === "Sprout"
-        ? "grow your first sprout"
-        : upcomingMasteryStage.name === "Bud"
-          ? "make your flower bud"
-          : upcomingMasteryStage.name === "Bloom"
-            ? "make your flower bloom"
-            : "grow a bouquet";
     const unlock =
       upcomingMasteryStage.threshold === LEVEL_UNLOCK_STREAK &&
       progress.activeLevel < LEVELS.length
-        ? ` and unlock Level ${progress.activeLevel + 1}`
+        ? ` to unlock Level ${progress.activeLevel + 1}`
         : "";
     const requirements = [
       `${upcomingMasteryStage.coverage === 1 ? "master all" : "master"} ${requiredMasteredItems} ${
@@ -1066,8 +1058,10 @@ export default function App() {
       requirements.length === 2
         ? requirements.join(" and ")
         : `${requirements.slice(0, -1).join(", ")}, and ${requirements.at(-1)}`;
+    const capitalizedRequirements =
+      `${requirementText.charAt(0).toUpperCase()}${requirementText.slice(1)}`;
 
-    return `To ${action}${unlock}, ${requirementText}.`;
+    return `${capitalizedRequirements}${unlock}.`;
   })();
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
@@ -1805,14 +1799,6 @@ export default function App() {
         </button>
         <div className="header-stats">
           <span className="streak-pill">{progress.dayStreak} day streak</span>
-          <button
-            type="button"
-            className="level-pill"
-            onClick={() => setTab("journey")}
-            aria-label={`Open Journey. Current level ${progress.activeLevel}`}
-          >
-            Level {progress.activeLevel} <span aria-hidden="true">→</span>
-          </button>
         </div>
       </header>
 
@@ -1828,12 +1814,17 @@ export default function App() {
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
               }`}
             >
-              <div className="current-level">
-                <div>
+              <button
+                type="button"
+                className="current-level"
+                onClick={() => setTab("journey")}
+                aria-label={`Open Journey. Current level ${progress.activeLevel}`}
+              >
+                <span className="current-level-number">
                   <span>LEVEL</span>
                   <strong>{progress.activeLevel}</strong>
-                </div>
-                <div
+                </span>
+                <span
                   className={`mastery-flower ${
                     masteryCelebration?.level === progress.activeLevel ? "celebrating" : ""
                   }`}
@@ -1846,10 +1837,10 @@ export default function App() {
                   <i aria-hidden="true">✦</i>
                   <i aria-hidden="true">✦</i>
                   <i aria-hidden="true">✦</i>
-                </div>
-              </div>
+                </span>
+              </button>
               <div className="graduation-copy">
-                <div aria-live="polite">
+                <div className="mastery-summary" aria-live="polite">
                   <strong>
                     {earnedMasteryStage
                       ? `${earnedMasteryStage.name} earned`
@@ -1913,7 +1904,11 @@ export default function App() {
                   )}
                 </div>
               </div>
-              {canGraduate && <button onClick={graduate}>Move up <span>→</span></button>}
+              {canGraduate && (
+                <button className="graduate-button" onClick={graduate}>
+                  Move up <span>→</span>
+                </button>
+              )}
             </div>
 
             <div className="session-row">
@@ -2155,19 +2150,6 @@ export default function App() {
               </div>
             )}
 
-            {!selected && (
-              <div className="adapt-note">
-                <Icon name="spark" />
-                <span>
-                  <strong>Adapting to you.</strong>{" "}
-                  {exerciseKind === "pattern"
-                    ? "Missed patterns return sooner."
-                    : question.word.kind === "phrase"
-                      ? "Missed phrases return sooner."
-                      : "Missed words return sooner."}
-                </span>
-              </div>
-            )}
           </section>
         )}
 
@@ -2186,22 +2168,6 @@ export default function App() {
                   </div>
                 </footer>
               </blockquote>
-            </div>
-            <div className="stats-grid">
-              <div className="stat-card accent">
-                <span>Accuracy</span>
-                <strong>{accuracy}%</strong>
-                <small>
-                  {progress.totalAnswers} {progress.totalAnswers === 1 ? "answer" : "answers"}
-                </small>
-              </div>
-              <div className="stat-card"><span>Average speed</span><strong>{averageSeconds}<em>s</em></strong><small>per answer</small></div>
-              <div className="stat-card"><span>Best streak</span><strong>{progress.bestStreak}</strong><small>correct in a row</small></div>
-              <div className="stat-card">
-                <span>Items mastered</span>
-                <strong>{mastered}</strong>
-                <small>{masteredWords} words · {masteredPhrases} phrases</small>
-              </div>
             </div>
             <div className="section-card">
               <div className="section-heading">
@@ -2298,6 +2264,22 @@ export default function App() {
                   Each flower needs both the best streak shown and mastered level items. Bouquet
                   also requires every pattern assigned to that level. Earned flowers never shrink.
                 </p>
+              </div>
+            </div>
+            <div className="stats-grid">
+              <div className="stat-card accent">
+                <span>Accuracy</span>
+                <strong>{accuracy}%</strong>
+                <small>
+                  {progress.totalAnswers} {progress.totalAnswers === 1 ? "answer" : "answers"}
+                </small>
+              </div>
+              <div className="stat-card"><span>Average speed</span><strong>{averageSeconds}<em>s</em></strong><small>per answer</small></div>
+              <div className="stat-card"><span>Best streak</span><strong>{progress.bestStreak}</strong><small>correct in a row</small></div>
+              <div className="stat-card">
+                <span>Items mastered</span>
+                <strong>{mastered}</strong>
+                <small>{masteredWords} words · {masteredPhrases} phrases</small>
               </div>
             </div>
             <div className="section-card pattern-library">
