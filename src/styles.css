@@ -13,6 +13,7 @@
   --sage: #dce7da;
   --orange: #dc784d;
   --line: #ddd8ce;
+  --literary: #8b756a;
 }
 
 * { box-sizing: border-box; }
@@ -296,7 +297,7 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 .literary-quote footer { display: flex; flex-direction: column; gap: 5px; }
 .literary-quote footer span { color: var(--muted); line-height: 1.55; }
 .literary-quote cite {
-  color: #8b756a;
+  color: var(--literary);
   font-size: 9px;
   font-style: normal;
   font-weight: 800;
@@ -365,14 +366,19 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
 }
 .onboarding-quote > p {
   margin: 0;
-  color: #52665a;
+  color: var(--literary);
   font-family: "Noto Naskh Arabic", serif;
   font-weight: 600;
   letter-spacing: 0;
 }
 .onboarding-quote > p { font-size: 21px; line-height: 1.55; }
-.onboarding-quote footer { margin-top: 6px; }
-.onboarding-quote footer span { font-family: Georgia, serif; font-size: 9px; font-style: italic; }
+.onboarding-quote footer {
+  margin-top: 6px; align-items: flex-end; text-align: right;
+}
+.onboarding-quote footer span {
+  color: var(--literary); font-family: Georgia, serif; font-size: 9px; font-style: italic;
+}
+.onboarding-quote .literary-attribution { justify-content: flex-end; }
 .onboarding-quote-compact { margin: -12px 0 17px; padding-top: 10px; }
 .onboarding-quote-compact > p { font-size: 18px; line-height: 1.5; }
 .onboarding-quote-compact footer span { font-size: 9px; }
@@ -1122,14 +1128,19 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 .about-literary-quote > p {
   margin: 0;
-  color: #52665a;
+  color: var(--literary);
   font-family: "Noto Naskh Arabic", serif;
   font-size: clamp(21px, 6vw, 27px);
   font-weight: 600;
   line-height: 1.55;
 }
-.about-literary-quote footer { margin-top: 7px; }
-.about-literary-quote footer span { font-family: Georgia, serif; font-size: 9px; font-style: italic; }
+.about-literary-quote footer {
+  margin-top: 7px; align-items: flex-end; text-align: right;
+}
+.about-literary-quote footer span {
+  color: var(--literary); font-family: Georgia, serif; font-size: 9px; font-style: italic;
+}
+.about-literary-quote .literary-attribution { justify-content: flex-end; }
 .about-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .about-action {
   min-height: 58px; padding: 12px 14px; display: flex; align-items: center; justify-content: center;
@@ -1217,12 +1228,33 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   background: rgba(255, 253, 248, .92); backdrop-filter: blur(18px);
   border-top: 1px solid rgba(50, 65, 52, .12);
 }
-.bottom-nav button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 10px; color: #7f857d; cursor: pointer; }
+.bottom-nav button {
+  padding: 4px 0; border: 0; border-radius: 12px; background: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  font-size: 10px; color: #7f857d; cursor: pointer;
+  transition: background .2s ease, color .2s ease, box-shadow .2s ease;
+}
 .bottom-nav button > span:first-child { font-size: 18px; }
 .bottom-nav button:nth-child(3) > span:first-child {
   font-family: "Noto Naskh Arabic", serif; font-size: 20px; line-height: 1;
 }
-.bottom-nav button.active { color: var(--green); font-weight: 700; }
+.bottom-nav button.active {
+  background: var(--sage); color: var(--green-dark); font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(46, 93, 69, .1);
+}
+
+.mastery-screen-flash {
+  position: fixed; z-index: 19; inset: 0; pointer-events: none; opacity: 0;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 246, 198, .8), rgba(229, 160, 65, .27) 48%, rgba(255, 253, 248, .24));
+}
+
+.mastery-flower.major-celebrating::before {
+  content: "";
+  position: absolute; z-index: 0; inset: -10px; border-radius: 50%; opacity: 0;
+  background: radial-gradient(circle, rgba(255, 238, 167, .94), rgba(229, 160, 65, .22) 52%, transparent 72%);
+  pointer-events: none;
+}
 
 @media (max-width: 900px) {
   .landing-hero {
@@ -1595,6 +1627,15 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .level-unlock-flower-wrap img {
     animation: flower-pop 900ms cubic-bezier(.2, .8, .25, 1);
   }
+  .mastery-screen-flash {
+    animation: mastery-screen-flash 1.05s ease-out both;
+  }
+  .mastery-flower.major-celebrating::before {
+    animation: major-flower-aura 1.05s ease-out both;
+  }
+  .mastery-flower.major-celebrating img {
+    animation: major-flower-highlight 1.05s ease-out both;
+  }
   .mastery-flower.celebrating::after {
     animation: flower-ring 900ms ease-out;
   }
@@ -1624,6 +1665,36 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     0% { border-color: rgba(229, 160, 65, .9); box-shadow: 0 0 0 0 rgba(229, 160, 65, .36); }
     45% { border-color: rgba(229, 160, 65, .75); box-shadow: 0 0 0 7px rgba(229, 160, 65, .12); }
     100% { box-shadow: 0 0 0 13px rgba(229, 160, 65, 0); }
+  }
+  @keyframes mastery-screen-flash {
+    0% { opacity: 0; }
+    12% { opacity: .92; }
+    55% { opacity: .42; }
+    100% { opacity: 0; }
+  }
+  @keyframes major-flower-aura {
+    0% { opacity: 0; transform: scale(.62); }
+    18% { opacity: 1; }
+    65% { opacity: .86; transform: scale(1.08); }
+    100% { opacity: 0; transform: scale(1.4); }
+  }
+  @keyframes major-flower-highlight {
+    0% {
+      transform: scale(.76);
+      filter: drop-shadow(0 4px 5px rgba(54, 70, 56, .11));
+    }
+    24% {
+      transform: scale(1.17) rotate(2deg);
+      filter: brightness(1.18) drop-shadow(0 0 14px rgba(229, 160, 65, .96));
+    }
+    68% {
+      transform: scale(1.05) rotate(-1deg);
+      filter: brightness(1.1) drop-shadow(0 0 10px rgba(229, 160, 65, .72));
+    }
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 4px 5px rgba(54, 70, 56, .11));
+    }
   }
   @keyframes flower-sparkle {
     0% { opacity: 0; transform: translateY(5px) scale(.35) rotate(-20deg); }

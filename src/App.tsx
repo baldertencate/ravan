@@ -1027,6 +1027,13 @@ export default function App() {
   const activeEvidence = levelEvidence(progress);
   const earnedMasteryStage = masteryStage(activeMastery.earnedThreshold);
   const upcomingMasteryStage = nextMasteryStage(activeMastery.earnedThreshold);
+  const celebratedMasteryStage = masteryCelebration
+    ? masteryStage(masteryCelebration.threshold)
+    : null;
+  const showProminentMasteryCelebration =
+    masteryCelebration?.level === progress.activeLevel &&
+    (celebratedMasteryStage?.name === "Sprout" ||
+      celebratedMasteryStage?.name === "Bloom");
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
   const requiredMasteredItems = upcomingMasteryStage
     ? requiredItemsForStage(activeEvidence.itemCount, upcomingMasteryStage.coverage)
@@ -1060,8 +1067,11 @@ export default function App() {
         : `${requirements.slice(0, -1).join(", ")}, and ${requirements.at(-1)}`;
     const capitalizedRequirements =
       `${requirementText.charAt(0).toUpperCase()}${requirementText.slice(1)}`;
+    const requirementLead = earnedMasteryStage
+      ? `Next, ${requirementText}`
+      : capitalizedRequirements;
 
-    return `${capitalizedRequirements}${unlock}.`;
+    return `${requirementLead}${unlock}.`;
   })();
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
@@ -1675,6 +1685,9 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {showProminentMasteryCelebration && (
+        <div className="mastery-screen-flash" aria-hidden="true" />
+      )}
       {showDonationThanks && (
         <div className="level-unlock-backdrop donation-thanks-backdrop">
           <section
@@ -1812,7 +1825,7 @@ export default function App() {
             <div
               className={`graduation-card ${canGraduate ? "ready" : ""} ${
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
-              }`}
+              } ${showProminentMasteryCelebration ? "major-flower-celebrating" : ""}`}
             >
               <button
                 type="button"
@@ -1827,7 +1840,7 @@ export default function App() {
                 <span
                   className={`mastery-flower ${
                     masteryCelebration?.level === progress.activeLevel ? "celebrating" : ""
-                  }`}
+                  } ${showProminentMasteryCelebration ? "major-celebrating" : ""}`}
                 >
                   <img
                     className={earnedMasteryStage ? "" : "not-earned"}
@@ -1843,8 +1856,8 @@ export default function App() {
                 <div className="mastery-summary" aria-live="polite">
                   <strong>
                     {earnedMasteryStage
-                      ? `${earnedMasteryStage.name} earned`
-                      : "Grow your first sprout"}
+                      ? `${earnedMasteryStage.name} earned.`
+                      : "Grow your first sprout."}
                   </strong>
                   <span>
                     {upcomingMasteryStage
@@ -2614,6 +2627,7 @@ export default function App() {
           <button
             key={item}
             className={tab === item ? "active" : ""}
+            aria-current={tab === item ? "page" : undefined}
             onClick={() => {
               setTab(item);
               trackEvent("Tab Opened", { tab: item });
