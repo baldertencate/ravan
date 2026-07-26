@@ -1258,7 +1258,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 @media (max-width: 480px) {
   .landing-header { width: calc(100% - 28px); }
   .landing-brand strong { font-size: 15px; }
-  .landing-brand small { font-size: 8px; }
+  .landing-brand small { font-size: 10px; }
   .landing-header .brand-mark { width: 38px; height: 38px; }
   .landing main { width: calc(100% - 28px); }
   .landing-hero { padding-top: 42px; }
@@ -1320,7 +1320,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .brand-copy strong { font-size: 14px; }
-  .brand-copy small { font-size: 7px; }
+  .brand-copy small { font-size: 9px; }
 
   .brand-mark {
     width: 36px;
@@ -1331,17 +1331,17 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
   .streak-pill,
   .level-pill {
-    padding: 7px 9px;
-    font-size: 10px;
+    padding: 7px 8px;
+    font-size: 11px;
   }
 
   main {
-    padding: 10px 12px 16px;
+    padding: 8px 12px 14px;
   }
 
   .session-row {
     align-items: center;
-    margin-bottom: 7px;
+    margin-bottom: 5px;
   }
 
   .session-row h1 {
@@ -1354,18 +1354,18 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     padding: 5px 6px;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 7px;
+    font-size: 9px;
   }
 
   .progress-track {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .graduation-card {
     grid-template-columns: 78px 1fr;
     gap: 8px;
-    padding: 7px 9px;
-    margin: 0 0 9px;
+    padding: 6px 9px;
+    margin: 0 0 7px;
     border-radius: 13px;
   }
 
@@ -1399,27 +1399,28 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .graduation-copy strong {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .graduation-copy span {
-    font-size: 8px;
+    font-size: 9px;
+    line-height: 1.35;
   }
 
   .graduation-track {
-    height: 16px;
+    height: 17px;
   }
 
   .word-card {
     min-height: 148px;
-    padding: 12px 14px;
+    padding: 10px 14px;
     border-radius: 19px;
   }
 
   .mode-tag,
   .card-vowel-toggle {
-    padding: 6px 8px;
-    font-size: 8px;
+    padding: 5px 8px;
+    font-size: 10px;
   }
 
   .persian-word {
@@ -1443,13 +1444,13 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .prompt {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .answers {
     grid-template-columns: 1fr 1fr;
     gap: 7px;
-    margin-top: 9px;
+    margin-top: 7px;
   }
 
   .answer {
@@ -1463,6 +1464,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .answer-key {
     width: 21px;
     height: 21px;
+    font-size: 11px;
   }
 
   .boundary-option {
@@ -1475,8 +1477,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .feedback {
     position: static;
     width: auto;
-    margin-top: 8px;
-    padding: 9px 10px;
+    margin-top: 6px;
+    padding: 7px 10px;
     transform: none;
     align-items: center;
     flex-direction: row;
@@ -1485,9 +1487,9 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .feedback-continue {
-    min-height: 40px;
+    min-height: 38px;
     width: auto;
-    padding-inline: 14px;
+    padding: 9px 13px;
   }
 
   .feedback-copy {
@@ -1501,7 +1503,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .adapt-note {
-    margin-top: 12px;
+    margin-top: 10px;
+    font-size: 12px;
   }
 
   .exercise-alphabet-card { padding: 12px; border-radius: 15px; }
@@ -1518,7 +1521,68 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .alphabet-letter-main strong { font-size: 10px; }
   .alphabet-forms b,
   .alphabet-nonjoining b { font-size: 18px; }
-  .bottom-nav button { font-size: 9px; }
+  .bottom-nav button { font-size: 10px; }
+
+  .onboarding-progress > span,
+  .intro-list-label,
+  .current-level span,
+  .streak-stat span,
+  .streak-stat small,
+  .mastery-key small,
+  .mastery-key p,
+  .pattern-tile > div span,
+  .mini-ring,
+  .phrase-label {
+    font-size: 9px;
+  }
+
+  .onboarding-quote footer span,
+  .method-preview small,
+  .onboarding-install small,
+  .reminder-choice small,
+  .install-help span,
+  .reminder-controls label > span,
+  .calendar-file-action,
+  .about-replay-link,
+  .graduation-track b,
+  .word-pattern-note,
+  .pattern-stage,
+  .feedback-reading-help,
+  .feedback-reading-explainer strong,
+  .level-row small,
+  .level-row > span:last-child,
+  .pattern-tile p,
+  .alphabet-section-heading > span,
+  .alphabet-letter-main small,
+  .about-literary-quote footer span,
+  .about-action-status,
+  .preference-list small,
+  .about-support,
+  .about-contact-link,
+  .about-reset-link {
+    font-size: 10px;
+  }
+
+  .eyebrow,
+  .vowel-toggle,
+  .pattern-example-meaning,
+  .stat-card small,
+  .section-heading > span,
+  .settings-card > p,
+  .word-row span,
+  .word-row small {
+    font-size: 11px;
+  }
+
+  .alphabet-forms small,
+  .alphabet-nonjoining small {
+    font-size: 8px;
+  }
+
+  .alphabet-nonjoining em,
+  .literary-attribution small {
+    font-size: 9px;
+  }
 
   .bottom-nav {
     position: fixed;
