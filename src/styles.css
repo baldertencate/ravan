@@ -952,17 +952,25 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .journey-literary-quote { margin-top: 12px; }
 .journey-literary-quote > p {
   margin: 0;
-  color: #52665a;
+  color: var(--literary);
   font-family: "Noto Naskh Arabic", serif;
   font-size: clamp(20px, 5vw, 24px);
   font-weight: 600;
   line-height: 1.55;
 }
-.journey-literary-quote footer { margin-top: 4px; }
+.journey-literary-quote footer {
+  margin-top: 4px;
+  align-items: flex-end;
+  text-align: right;
+}
 .journey-literary-quote footer > span {
+  color: var(--literary);
   font-family: Georgia, serif;
   font-size: 9px;
   font-style: italic;
+}
+.journey-literary-quote .literary-attribution {
+  justify-content: flex-end;
 }
 .stats-grid { margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .stat-card { background: var(--paper); border: 1px solid #e4ded2; border-radius: 18px; padding: 17px; display: flex; flex-direction: column; }
