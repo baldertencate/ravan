@@ -1618,6 +1618,92 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 }
 
+@media (min-width: 601px) and (pointer: fine) {
+  .app-shell {
+    padding-bottom: 78px;
+  }
+
+  .topbar {
+    height: 62px;
+    padding-inline: 18px;
+  }
+
+  main {
+    padding: 14px 22px 8px;
+  }
+
+  .progress-track {
+    margin-bottom: 12px;
+  }
+
+  .graduation-card {
+    padding: 8px 10px;
+    margin: -4px 0 10px;
+    gap: 10px;
+  }
+
+  .current-level {
+    min-height: 50px;
+  }
+
+  .session-row {
+    margin-bottom: 9px;
+  }
+
+  .session-row h1 {
+    margin-top: 2px;
+    font-size: 32px;
+  }
+
+  .word-card {
+    min-height: 170px;
+    padding: 14px 18px;
+    border-radius: 20px;
+  }
+
+  .persian-word {
+    padding: 4px 8px;
+    font-size: clamp(58px, 7vw, 76px);
+    line-height: 1.15;
+  }
+
+  .persian-word.phrase {
+    font-size: clamp(40px, 5vw, 54px);
+    line-height: 1.2;
+  }
+
+  .pattern-question-word {
+    font-size: clamp(50px, 6vw, 68px);
+    line-height: 1.2;
+  }
+
+  .answers {
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .answer {
+    min-height: 50px;
+    padding: 8px 11px;
+    border-radius: 12px;
+    font-size: 14px;
+  }
+
+  .feedback {
+    margin-top: 8px;
+    padding: 10px 12px;
+  }
+
+  .feedback-continue {
+    padding: 9px 13px;
+  }
+
+  .bottom-nav {
+    height: calc(62px + env(safe-area-inset-bottom));
+    padding-top: 6px;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .word-card { animation: rise .35s ease-out; }
   .mastery-flower.celebrating img,
