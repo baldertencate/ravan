@@ -50,7 +50,7 @@
   {"id":"w049","persian":"داد","transliteration":"dâd","meaning":"gave","level":3,"rank":49,"letters":["د","ا"]},
   {"id":"w050","persian":"گرفت","transliteration":"gereft","meaning":"took","level":3,"rank":50,"letters":["گ","ر","ف","ت"]},
   {"id":"w051","persian":"دارد","transliteration":"dârad","meaning":"has","level":3,"rank":51,"letters":["د","ا","ر"]},
-  {"id":"w052","persian":"خواهد","transliteration":"khâhad","meaning":"will / wants","level":3,"rank":52,"letters":["خ","و","ا","ه","د"]},
+  {"id":"w052","persian":"خواهد","transliteration":"khâhad","meaning":"will / wants","level":3,"rank":52,"letters":["خ","و","ا","ه","د"],"readingHelp":{"label":"Why is و silent?","markedPersian":"خوا","explanation":"The fixed three-letter sequence خوا is made from خ + و + ا. In many common Persian words, its و is silent and خوا is read khâ: خواهد khâhad, خواندن khândan, خواهر khâhar, and خواب khâb."}},
   {"id":"w053","persian":"تواند","transliteration":"tavânad","meaning":"can","level":3,"rank":53,"letters":["ت","و","ا","ن","د"]},
   {"id":"w054","persian":"باید","transliteration":"bâyad","meaning":"must","level":3,"rank":54,"letters":["ب","ا","ی","د"]},
   {"id":"w055","persian":"خانه","transliteration":"khâne","spokenTransliteration":"khune","meaning":"home","level":3,"rank":55,"letters":["خ","ا","ن","ه"]},
