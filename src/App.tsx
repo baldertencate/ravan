@@ -560,7 +560,8 @@ function shuffle<T>(items: T[]) {
 }
 
 function dayKey(date = new Date()) {
-  return date.toISOString().slice(0, 10);
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function dayDifference(a: string, b: string) {
