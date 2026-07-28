@@ -541,8 +541,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   background: #eee9de; color: #4d5b50; box-shadow: inset 0 0 0 1px #e1dbcf;
 }
 .card-vowel-toggle[aria-checked="true"] { background: var(--sage); color: var(--green-dark); }
-.progress-track { height: 4px; background: #dedad0; border-radius: 99px; overflow: hidden; margin-bottom: 22px; }
-.progress-track span { height: 100%; display: block; background: var(--orange); border-radius: inherit; transition: width .35s ease; }
 .graduation-card {
   display: grid; grid-template-columns: 92px 1fr auto; align-items: center; gap: 12px;
   background: #ece7dc; border: 1px solid #ded7ca; border-radius: 17px;
@@ -1392,10 +1390,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     font-size: 9px;
   }
 
-  .progress-track {
-    margin-bottom: 8px;
-  }
-
   .graduation-card {
     grid-template-columns: 78px 1fr;
     gap: 8px;
@@ -1638,10 +1632,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
   main {
     padding: 14px 22px 8px;
-  }
-
-  .progress-track {
-    margin-bottom: 12px;
   }
 
   .graduation-card {

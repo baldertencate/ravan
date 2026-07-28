@@ -1822,10 +1822,6 @@ export default function App() {
       <main>
         {tab === "learn" && (
           <section className="learn-view">
-            <div className="progress-track" aria-label="Session progress">
-              <span style={{ width: `${Math.min(100, session.answers * 10)}%` }} />
-            </div>
-
             <div
               className={`graduation-card ${canGraduate ? "ready" : ""} ${
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
