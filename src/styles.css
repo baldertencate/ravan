@@ -473,7 +473,7 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   padding: 0 22px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   border-bottom: 1px solid rgba(50, 65, 52, .1);
 }
 .brand { display: flex; align-items: center; gap: 10px; border: 0; background: none; cursor: pointer; font-weight: 700; font-size: 18px; }
@@ -483,10 +483,6 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   font-family: "Noto Naskh Arabic", serif; font-size: 18px; line-height: 1;
   box-shadow: 0 5px 12px rgba(40, 77, 56, .16);
 }
-.header-stats { display: flex; gap: 8px; align-items: center; }
-.streak-pill { padding: 8px 11px; border-radius: 99px; font-size: 12px; font-weight: 700; }
-.streak-pill { background: #f8dfca; color: #9d4b2b; }
-
 main { padding: 30px 22px 10px; }
 .session-row { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
 .debug-badge {
@@ -540,6 +536,51 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   font-family: Georgia, serif; color: var(--green-dark); font-size: 25px;
   font-weight: 500; line-height: 1;
 }
+.level-picker-scrim {
+  position: fixed; z-index: 13; inset: 0;
+  background: rgba(31, 47, 37, .18); backdrop-filter: blur(1.5px);
+}
+.level-picker-popover {
+  width: min(304px, calc(100vw - 42px));
+  max-height: min(590px, calc(100svh - 142px));
+  padding: 8px;
+  position: absolute; z-index: 14; top: calc(100% + 8px); left: -1px;
+  overflow-y: auto;
+  border: 1px solid rgba(46, 93, 69, .22); border-radius: 18px;
+  background: var(--paper);
+  box-shadow: 0 22px 55px rgba(25, 42, 31, .28);
+}
+.level-picker-list { display: grid; gap: 5px; }
+.level-picker-option {
+  width: 100%; min-height: 54px; padding: 5px 8px;
+  display: grid; grid-template-columns: 37px minmax(0, 1fr) 48px;
+  align-items: center; gap: 8px;
+  border: 1px solid transparent; border-radius: 12px;
+  background: #f6f2e9; text-align: left; cursor: pointer;
+}
+.level-picker-option.current {
+  border-color: rgba(46, 93, 69, .3); background: var(--sage);
+  box-shadow: inset 3px 0 0 var(--green);
+}
+.level-picker-option:disabled { opacity: .43; cursor: not-allowed; }
+.level-picker-number { display: flex; flex-direction: column; align-items: center; }
+.level-picker-number small {
+  color: var(--muted); font-size: 6px; font-weight: 800; letter-spacing: .1em;
+}
+.level-picker-number strong {
+  color: var(--green-dark); font-family: Georgia, serif; font-size: 22px; font-weight: 500;
+}
+.level-picker-copy { min-width: 0; display: flex; flex-direction: column; }
+.level-picker-copy strong { font-size: 11px; line-height: 1.25; }
+.level-picker-flower {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--green-dark); text-align: center;
+}
+.level-picker-flower img {
+  width: 40px; height: 40px; object-fit: contain;
+  filter: drop-shadow(0 3px 4px rgba(54, 70, 56, .1));
+}
+.level-picker-flower img.not-earned { opacity: .27; filter: grayscale(1); transform: scale(.82); }
 .mastery-flower-wrap { position: relative; display: block; }
 .mastery-flower {
   width: 54px;
@@ -933,16 +974,16 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .feedback { margin-top: 14px; padding: 15px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .feedback.success { background: #dfeadd; }
 .feedback.retry { background: #f7dfd4; }
-.feedback-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 3px; font-size: 12px; }
-.feedback strong { font-size: 14px; }
+.feedback-copy { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 4px; font-size: 13px; }
+.feedback strong { font-size: 15px; }
 .feedback b { font-family: "Noto Naskh Arabic", serif; font-size: 18px; }
 .feedback-answer-line {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px;
-  font-size: 13px; line-height: 1.4;
+  font-size: 14px; line-height: 1.45;
 }
 .feedback-reading-help {
   padding: 0; border: 0; background: none; color: #9d4b2b;
-  font-size: 11px; font-weight: 700; text-decoration: underline;
+  font-size: 12px; font-weight: 800; text-decoration: underline;
   text-underline-offset: 3px; cursor: pointer;
 }
 .feedback-reading-explainer {
@@ -956,10 +997,10 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   line-height: 1.25; text-align: center;
 }
 .feedback-reading-explainer strong {
-  align-self: end; color: var(--orange); font-size: 9px;
+  align-self: end; color: #a75031; font-size: 11px;
 }
 .feedback-reading-explainer span {
-  align-self: start; color: var(--muted); font-size: 10px; line-height: 1.45;
+  align-self: start; color: #4f5b52; font-size: 12px; line-height: 1.5;
 }
 .feedback-continue {
   padding: 11px 14px; border: 0; border-radius: 11px;
@@ -1144,20 +1185,22 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 }
 
 .settings-view { padding-bottom: 10px; }
-.settings-view .settings-page-intro { margin-bottom: 20px; }
-.settings-group-heading { margin: 0 0 10px; }
-.settings-group-heading h2 { margin: 4px 0 0; font-size: 22px; }
+.settings-view .settings-page-intro { margin-bottom: 14px; }
 .settings-about-section {
   margin-top: 28px;
   padding-top: 24px;
   border-top: 1px solid #ddd8ce;
 }
 .settings-about-section h2 {
-  max-width: 560px; margin: 7px 0 0; font-family: Georgia, serif;
-  font-size: clamp(27px, 6vw, 36px); font-weight: 500; letter-spacing: -.025em;
+  max-width: 560px; margin: 0; font-family: Georgia, serif;
+  font-size: 24px; font-weight: 500; letter-spacing: -.025em;
+}
+.settings-about-lead {
+  display: block; max-width: 560px; margin-top: 10px;
+  font-family: Georgia, serif; font-size: 18px; font-weight: 500; line-height: 1.4;
 }
 .settings-about-section > p {
-  max-width: 560px; margin: 12px 0 0; color: var(--muted); line-height: 1.6;
+  max-width: 560px; margin: 8px 0 0; color: var(--muted); line-height: 1.6;
 }
 .about-literary-quote {
   max-width: 470px;
@@ -1180,7 +1223,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   color: var(--literary); font-family: Georgia, serif; font-size: 9px; font-style: italic;
 }
 .about-literary-quote .literary-attribution { justify-content: flex-end; }
-.about-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .about-action {
   min-height: 58px; padding: 12px 14px; display: flex; align-items: center; justify-content: center;
   gap: 9px; border: 1px solid #d7d4ca; border-radius: 15px; background: var(--paper);
@@ -1189,25 +1231,31 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .about-action > span { font-size: 17px; font-weight: 500; }
 .about-action.primary { border-color: var(--green); background: var(--green); color: white; }
 .about-action:disabled { opacity: .62; cursor: default; }
-.about-install-help { margin-top: 10px; }
 .about-action-status { padding: 8px 4px 0; color: var(--green); font-size: 9px; font-weight: 700; }
 .settings-card {
-  margin-top: 10px; padding: 18px; background: var(--paper);
+  margin-top: 10px; padding: 17px 18px; background: var(--paper);
   border: 1px solid #e4ded2; border-radius: 19px;
 }
 .settings-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
-.settings-heading h2 { margin: 4px 0 0; font-size: 20px; }
+.settings-heading h2 { margin: 0; font-size: 21px; }
 .settings-card > p { margin: 9px 0 13px; color: var(--muted); font-size: 10px; line-height: 1.55; }
 .settings-toggle { min-width: 68px; justify-content: flex-end; }
+.settings-toggle.installed:disabled { opacity: .66; cursor: default; }
+.settings-toggle.installed:disabled .toggle-track { background: #8f9c93; }
 .settings-card .secondary-action { margin-top: 2px; }
-.preference-list { display: grid; margin-top: 9px; }
-.preference-list > div {
+.preference-list { display: grid; margin-top: 7px; }
+.preference-item {
   padding: 12px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px;
   border-top: 1px solid #ece7de;
 }
-.preference-list > div > span { display: flex; flex-direction: column; gap: 3px; }
+.preference-item > span { display: flex; flex-direction: column; gap: 3px; }
 .preference-list strong { font-size: 11px; }
 .preference-list small { color: var(--muted); font-size: 9px; }
+.preference-details { padding: 2px 0 13px; }
+.preference-details .reminder-controls { margin-bottom: 10px; }
+.preference-details .calendar-actions { margin-top: 0; }
+.settings-install-help { margin: 0; }
+.settings-share-action { width: 100%; min-height: 50px; margin-top: 10px; }
 .about-utility-links {
   margin: 20px 0 4px;
   display: flex;
@@ -1388,18 +1436,13 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .brand-copy strong { font-size: 14px; }
-  .brand-copy small { font-size: 9px; }
+  .brand-copy small { font-size: 10px; }
 
   .brand-mark {
     width: 36px;
     height: 36px;
     border-radius: 11px 11px 11px 4px;
     font-size: 16px;
-  }
-
-  .streak-pill {
-    padding: 7px 8px;
-    font-size: 11px;
   }
 
   main {
@@ -1421,7 +1464,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     padding: 5px 6px;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .graduation-card {
@@ -1447,6 +1490,22 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     font-size: 22px;
   }
 
+  .level-picker-popover {
+    width: min(312px, calc(100vw - 36px));
+    max-height: calc(100svh - 126px);
+    padding: 8px;
+    top: calc(100% + 7px);
+  }
+
+  .level-picker-option {
+    min-height: 56px;
+    grid-template-columns: 38px minmax(0, 1fr) 48px;
+  }
+  .level-picker-number small { font-size: 7px; }
+  .level-picker-number strong { font-size: 23px; }
+  .level-picker-copy strong { font-size: 12px; }
+  .level-picker-flower img { width: 42px; height: 42px; }
+
   .mastery-flower img {
     width: 46px;
     height: 46px;
@@ -1462,11 +1521,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .graduation-copy strong {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .graduation-copy span {
-    font-size: 9px;
+    font-size: 10px;
     line-height: 1.35;
   }
 
@@ -1475,8 +1534,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .progress-label {
-    font-size: 10px;
+    font-size: 11px;
   }
+
+  .progress-label strong { font-size: 12px; }
+  .progress-label small { font-size: 10px; }
 
   .word-card {
     min-height: 140px;
@@ -1487,7 +1549,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .mode-tag,
   .card-vowel-toggle {
     padding: 5px 8px;
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .persian-word {
@@ -1511,7 +1573,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .prompt {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .answers {
@@ -1524,14 +1586,14 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     min-height: 48px;
     padding: 7px 9px;
     grid-template-columns: 22px 1fr 15px;
-    font-size: 12px;
+    font-size: 14px;
     border-radius: 12px;
   }
 
   .answer-key {
     width: 21px;
     height: 21px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .boundary-option {
@@ -1561,7 +1623,14 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
   .feedback-copy {
     min-width: 0;
+    font-size: 14px;
   }
+
+  .feedback strong { font-size: 16px; }
+  .feedback-answer-line { font-size: 15px; }
+  .feedback-reading-help { font-size: 13px; }
+  .feedback-reading-explainer strong { font-size: 12px; }
+  .feedback-reading-explainer span { font-size: 13px; }
 
   .feedback-answer-line > span {
     white-space: normal;
@@ -1583,7 +1652,14 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .alphabet-letter-main strong { font-size: 10px; }
   .alphabet-forms b,
   .alphabet-nonjoining b { font-size: 18px; }
-  .bottom-nav button { font-size: 10px; }
+  .bottom-nav button { font-size: 11px; }
+
+  .settings-heading h2 { font-size: 21px; }
+  .settings-about-section h2 { font-size: 23px; }
+  .settings-about-lead { font-size: 19px; }
+  .preference-list strong { font-size: 13px; }
+  .about-action { font-size: 11px; }
+  .level-row strong { font-size: 13px; }
 
   .onboarding-progress > span,
   .current-level-number > span,
@@ -1592,7 +1668,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .pattern-tile > div span,
   .mini-ring,
   .phrase-label {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .onboarding-quote footer span,
@@ -1602,8 +1678,6 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .about-replay-link,
   .word-pattern-note,
   .pattern-stage,
-  .feedback-reading-help,
-  .feedback-reading-explainer strong,
   .level-row small,
   .level-row > span:last-child,
   .pattern-tile p,
@@ -1615,7 +1689,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .about-support,
   .about-contact-link,
   .about-reset-link {
-    font-size: 10px;
+    font-size: 11px;
   }
 
   .eyebrow,
@@ -1626,17 +1700,17 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .settings-card > p,
   .word-row span,
   .word-row small {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .alphabet-forms small,
   .alphabet-nonjoining small {
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .alphabet-nonjoining em,
   .literary-attribution small {
-    font-size: 9px;
+    font-size: 10px;
   }
 
   .bottom-nav {

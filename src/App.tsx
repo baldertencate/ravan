@@ -897,6 +897,7 @@ export default function App() {
   const [session, setSession] = useState({ correct: 0, answers: 0 });
   const [showReadingHelp, setShowReadingHelp] = useState(false);
   const [showFlowerTooltip, setShowFlowerTooltip] = useState(false);
+  const [showLevelPicker, setShowLevelPicker] = useState(false);
   const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
   const [exerciseKind, setExerciseKind] = useState<"item" | "pattern">("item");
   const [patternExercise, setPatternExercise] = useState<PatternExercise | null>(null);
@@ -1483,9 +1484,40 @@ export default function App() {
     trackEvent("Level Entered", { level: nextLevel, source: "unlock" });
   }
 
+  function enterLevel(level: number, source: "picker" | "journey") {
+    if (level > unlockedLevel) return;
+    setShowLevelPicker(false);
+    setShowFlowerTooltip(false);
+    if (level === progress.activeLevel) {
+      setTab("learn");
+      return;
+    }
+
+    const nextProgress = {
+      ...progress,
+      activeLevel: level,
+      streak: levelMastery(progress, level).currentStreak,
+    };
+    setProgress(nextProgress);
+    setQuestion(chooseQuestion(nextProgress));
+    setPatternExercise(null);
+    setExerciseKind("item");
+    setSelected(null);
+    setAnsweredCorrectly(null);
+    setShowReadingHelp(false);
+    setSession({ correct: 0, answers: 0 });
+    setTab("learn");
+    startedAt.current = Date.now();
+    trackEvent("Level Entered", { level, source });
+  }
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (tab !== "learn") return;
+      if (showLevelPicker) {
+        if (event.key === "Escape") setShowLevelPicker(false);
+        return;
+      }
       const index = Number(event.key) - 1;
       if (!selected && exerciseKind === "item" && index >= 0 && index < question.options.length) {
         answer(question.options[index].id);
@@ -1846,9 +1878,6 @@ export default function App() {
           <span className="brand-mark" lang="fa" dir="rtl">روان</span>
           <span className="brand-copy"><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
         </button>
-        <div className="header-stats">
-          <span className="streak-pill">{progress.dayStreak} day streak</span>
-        </div>
       </header>
 
       <main>
@@ -1863,8 +1892,14 @@ export default function App() {
                 <button
                   type="button"
                   className="current-level-number"
-                  onClick={() => setTab("journey")}
-                  aria-label={`Open Journey. Current level ${progress.activeLevel}`}
+                  onClick={() => {
+                    setShowFlowerTooltip(false);
+                    setShowLevelPicker((visible) => !visible);
+                  }}
+                  aria-label={`Choose practice level. Current level ${progress.activeLevel}`}
+                  aria-haspopup="dialog"
+                  aria-expanded={showLevelPicker}
+                  aria-controls="practice-level-picker"
                 >
                   <span>LEVEL</span>
                   <strong>{progress.activeLevel}</strong>
@@ -1911,12 +1946,69 @@ export default function App() {
                     </span>
                   </span>
                 </span>
+                {showLevelPicker && (
+                  <>
+                    <div
+                      className="level-picker-scrim"
+                      onClick={() => setShowLevelPicker(false)}
+                      aria-hidden="true"
+                    />
+                    <section
+                      className="level-picker-popover"
+                      id="practice-level-picker"
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label="Choose practice level"
+                    >
+                      <div className="level-picker-list">
+                        {LEVELS.map((level, index) => {
+                          const number = index + 1;
+                          const locked = number > unlockedLevel;
+                          const current = number === progress.activeLevel;
+                          const stage = masteryStage(
+                            levelMastery(progress, number).earnedThreshold,
+                          );
+                          return (
+                            <button
+                              type="button"
+                              className={`level-picker-option ${current ? "current" : ""}`}
+                              key={level.title}
+                              disabled={locked}
+                              aria-current={current ? "true" : undefined}
+                              aria-label={`Level ${number}, ${level.title}, ${
+                                stage?.name ?? "no flower stage"
+                              }${current ? ", current level" : locked ? ", locked" : ""}`}
+                              onClick={() => enterLevel(number, "picker")}
+                              autoFocus={current}
+                            >
+                              <span className="level-picker-number">
+                                <small>LEVEL</small>
+                                <strong>{number}</strong>
+                              </span>
+                              <span className="level-picker-copy">
+                                <strong>{level.title}</strong>
+                              </span>
+                              <span className={`level-picker-flower ${stage ? "" : "empty"}`}>
+                                <img
+                                  className={stage ? "" : "not-earned"}
+                                  src={stage?.image ?? MASTERY_STAGES[0].image}
+                                  alt=""
+                                  aria-hidden="true"
+                                />
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  </>
+                )}
               </div>
               <div className="graduation-copy">
                 <div className="mastery-goals">
                   <div className="mastery-item-progress">
                     <span className="progress-label">
-                      {activeEvidence.itemLabel === "phrase" ? "Phrases" : "Words"} mastered:{" "}
+                      Mastered:{" "}
                       <strong>{activeEvidence.masteredItems}</strong>
                     </span>
                     <div
@@ -1956,7 +2048,9 @@ export default function App() {
                   <div className="streak-progress">
                     <span className="progress-label">
                       Streak: <strong>{activeMastery.currentStreak}</strong>
-                      <small>Best {activeMastery.bestStreak}</small>
+                      <small aria-label={`Best streak ${activeMastery.bestStreak}`}>
+                        ({activeMastery.bestStreak})
+                      </small>
                     </span>
                     <div
                       className="graduation-track streak-goal"
@@ -2258,22 +2352,7 @@ export default function App() {
                       key={level.title}
                       className={`level-row ${active ? "active" : ""}`}
                       disabled={locked}
-                      onClick={() => {
-                        const nextProgress = {
-                          ...progress,
-                          activeLevel: number,
-                          streak: mastery.currentStreak,
-                        };
-                        setProgress(nextProgress);
-                        setQuestion(chooseQuestion(nextProgress));
-                        setExerciseKind("item");
-                        setSelected(null);
-                        setAnsweredCorrectly(null);
-                        setShowReadingHelp(false);
-                        setSession({ correct: 0, answers: 0 });
-                        setTab("learn");
-                        startedAt.current = Date.now();
-                      }}
+                      onClick={() => enterLevel(number, "journey")}
                     >
                       <span className="level-number">{locked ? "·" : number}</span>
                       <span><strong>{level.title}</strong><small>{level.copy}</small></span>
@@ -2331,24 +2410,6 @@ export default function App() {
                 <span>Items mastered</span>
                 <strong>{mastered}</strong>
                 <small>{masteredWords} words · {masteredPhrases} phrases</small>
-              </div>
-            </div>
-            <div className="section-card pattern-library">
-              <div className="section-heading">
-                <div><span className="eyebrow">PATTERN LIBRARY</span><h2>Read in useful chunks</h2></div>
-                <span>{PATTERNS.filter((pattern) => pattern.level <= unlockedLevel).length} unlocked</span>
-              </div>
-              <div className="pattern-grid">
-                {PATTERNS.map((pattern) => {
-                  const locked = pattern.level > unlockedLevel;
-                  return (
-                    <div className={`pattern-tile ${locked ? "locked" : ""}`} key={pattern.id}>
-                      <div><strong lang="fa" dir="rtl">{locked ? "—" : pattern.form}</strong><span>Level {pattern.level}</span></div>
-                      <h3>{pattern.name}</h3>
-                      <p>{locked ? "Graduate to reveal this pattern." : pattern.meaning}</p>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           </section>
@@ -2438,7 +2499,7 @@ export default function App() {
         {tab === "words" && (
           <section className="words-view">
             <div className="page-intro compact">
-              <span className="eyebrow">WORD & PHRASE GARDEN</span>
+              <span className="eyebrow">WORD, PHRASE & PATTERN GARDEN</span>
               <h1>{recentItems.length ? "Reading you’ve met" : "Your first words await."}</h1>
               <p>{dueCount} due now · {mastered} mastered · stored only on this device</p>
             </div>
@@ -2498,106 +2559,77 @@ export default function App() {
                 );
               })}
             </div>
+            <div className="section-card pattern-library">
+              <div className="section-heading">
+                <div><span className="eyebrow">PATTERN LIBRARY</span><h2>Read in useful chunks</h2></div>
+                <span>{PATTERNS.filter((pattern) => pattern.level <= unlockedLevel).length} unlocked</span>
+              </div>
+              <div className="pattern-grid">
+                {PATTERNS.map((pattern) => {
+                  const locked = pattern.level > unlockedLevel;
+                  return (
+                    <div className={`pattern-tile ${locked ? "locked" : ""}`} key={pattern.id}>
+                      <div><strong lang="fa" dir="rtl">{locked ? "—" : pattern.form}</strong><span>Level {pattern.level}</span></div>
+                      <h3>{pattern.name}</h3>
+                      <p>{locked ? "Graduate to reveal this pattern." : pattern.meaning}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </section>
         )}
 
         {tab === "settings" && (
           <section className="settings-view">
             <div className="page-intro settings-page-intro">
-              <span className="eyebrow">SETTINGS</span>
               <h1>Settings</h1>
-              <p>Manage reminders, app access, and practice preferences on this device.</p>
-            </div>
-
-            <div className="settings-group-heading">
-              <span className="eyebrow">APP</span>
-              <h2>Keep Ravân close</h2>
-            </div>
-            <div className="about-actions">
-              <button className="about-action primary" onClick={installApp} disabled={installed}>
-                <span aria-hidden="true">＋</span>
-                {installed ? "Added to Home Screen" : "Add to Home Screen"}
-              </button>
-              <button className="about-action" onClick={shareApp}>
-                <span aria-hidden="true">↗</span>
-                Share with friends
-              </button>
-            </div>
-            {showInstallHelp && !installed && (
-              <div className="install-help about-install-help">
-                <strong>Install from your browser</strong>
-                <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
-                <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
-              </div>
-            )}
-            {shareStatus && <div className="about-action-status">{shareStatus}</div>}
-
-            <div className="settings-card">
-              <div className="settings-heading">
-                <div><span className="eyebrow">PRACTICE REMINDER</span><h2>Return on your rhythm</h2></div>
-                <button
-                  type="button"
-                  className="vowel-toggle settings-toggle"
-                  role="switch"
-                  aria-checked={reminder.enabled}
-                  onClick={() => setReminder((current) => ({ ...current, enabled: !current.enabled }))}
-                >
-                  <span className="toggle-track"><span /></span>
-                  {reminder.enabled ? "On" : "Off"}
-                </button>
-              </div>
-              <p>Ravân can open a recurring event in Google Calendar. If you use another calendar, you can download a calendar file instead.</p>
-              {reminder.enabled && (
-                <>
-                  <div className="reminder-controls">
-                    <label>
-                      <span>Time</span>
-                      <input
-                        type="time"
-                        value={reminder.time}
-                        onChange={(event) => setReminder((current) => ({ ...current, time: event.target.value }))}
-                      />
-                    </label>
-                    <label>
-                      <span>Repeat</span>
-                      <select
-                        value={reminder.interval}
-                        onChange={(event) => setReminder((current) => ({ ...current, interval: Number(event.target.value) }))}
-                      >
-                        <option value={1}>Every day</option>
-                        <option value={2}>Every 2 days</option>
-                        <option value={3}>Every 3 days</option>
-                        <option value={7}>Every week</option>
-                      </select>
-                    </label>
-                  </div>
-                  <div className="calendar-actions">
-                    <a
-                      className="secondary-action calendar-action"
-                      href={googleCalendarUrl()}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={openGoogleCalendar}
-                    >
-                      Open Google Calendar
-                    </a>
-                    <button className="calendar-file-action" onClick={downloadCalendarFile}>Use another calendar</button>
-                  </div>
-                </>
-              )}
+              <p>Manage how Ravân works on this device.</p>
             </div>
 
             <div className="settings-card">
               <div className="settings-heading">
-                <div><span className="eyebrow">PRACTICE SETTINGS</span><h2>Preferences</h2></div>
+                <h2>Preferences</h2>
               </div>
               <div className="preference-list">
-                <div>
+                <div className="preference-item">
+                  <span>
+                    <strong>Add to Home Screen</strong>
+                    <small>
+                      {installed
+                        ? "Installed on this device. Remove it from your home screen or app settings to uninstall it."
+                        : "Open Ravân like an app directly from your home screen."}
+                    </small>
+                  </span>
+                  <button
+                    type="button"
+                    className={`vowel-toggle settings-toggle ${installed ? "installed" : ""}`}
+                    role="switch"
+                    aria-label="Add to Home Screen"
+                    aria-checked={installed}
+                    disabled={installed}
+                    onClick={installApp}
+                  >
+                    <span className="toggle-track"><span /></span>
+                    {installed ? "On" : "Off"}
+                  </button>
+                </div>
+                {showInstallHelp && !installed && (
+                  <div className="preference-details">
+                    <div className="install-help settings-install-help">
+                      <strong>Install from your browser</strong>
+                      <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
+                      <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
+                    </div>
+                  </div>
+                )}
+                <div className="preference-item">
                   <span><strong>Gentle haptics</strong><small>A short tap for a wrong answer, a gentle pulse when a flower grows, and a longer tap when a new level unlocks.</small></span>
                   <button
                     type="button"
                     className="vowel-toggle settings-toggle"
                     role="switch"
+                    aria-label="Gentle haptics"
                     aria-checked={haptics}
                     onClick={() => setHaptics((enabled) => !enabled)}
                   >
@@ -2605,12 +2637,84 @@ export default function App() {
                     {haptics ? "On" : "Off"}
                   </button>
                 </div>
+                <div className="preference-item">
+                  <span>
+                    <strong>Practice reminders</strong>
+                    <small>Create a recurring calendar event at a time that suits you.</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="vowel-toggle settings-toggle"
+                    role="switch"
+                    aria-label="Practice reminders"
+                    aria-checked={reminder.enabled}
+                    onClick={() =>
+                      setReminder((current) => ({ ...current, enabled: !current.enabled }))
+                    }
+                  >
+                    <span className="toggle-track"><span /></span>
+                    {reminder.enabled ? "On" : "Off"}
+                  </button>
+                </div>
+                {reminder.enabled && (
+                  <div className="preference-details">
+                    <div className="reminder-controls">
+                      <label>
+                        <span>Time</span>
+                        <input
+                          type="time"
+                          value={reminder.time}
+                          onChange={(event) =>
+                            setReminder((current) => ({ ...current, time: event.target.value }))
+                          }
+                        />
+                      </label>
+                      <label>
+                        <span>Repeat</span>
+                        <select
+                          value={reminder.interval}
+                          onChange={(event) =>
+                            setReminder((current) => ({
+                              ...current,
+                              interval: Number(event.target.value),
+                            }))
+                          }
+                        >
+                          <option value={1}>Every day</option>
+                          <option value={2}>Every 2 days</option>
+                          <option value={3}>Every 3 days</option>
+                          <option value={7}>Every week</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div className="calendar-actions">
+                      <a
+                        className="secondary-action calendar-action"
+                        href={googleCalendarUrl()}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={openGoogleCalendar}
+                      >
+                        Open Google Calendar
+                      </a>
+                      <button className="calendar-file-action" onClick={downloadCalendarFile}>
+                        Use another calendar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
+            <button className="about-action settings-share-action" onClick={shareApp}>
+              <span aria-hidden="true">↗</span>
+              Share with friends
+            </button>
+            {shareStatus && <div className="about-action-status">{shareStatus}</div>}
+
             <section className="settings-about-section" aria-labelledby="about-ravan-title">
-              <span className="eyebrow">ABOUT RAVÂN</span>
-              <h2 id="about-ravan-title">Helpful practice for learning to read Farsi.</h2>
+              <h2 id="about-ravan-title">About Ravân</h2>
+              <strong className="settings-about-lead">Helpful practice for learning to read Farsi.</strong>
               <p>Ravân complements courses, tutors, textbooks, and language apps with interactive exercises that track and grow your Persian reading skills.</p>
               <blockquote className="literary-quote about-literary-quote">
                 <p lang="fa" dir="rtl">
