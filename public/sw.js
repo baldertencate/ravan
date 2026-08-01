@@ -1,5 +1,8 @@
 const CACHE_PREFIX = "ravan-";
-const CACHE = `${CACHE_PREFIX}v41`;
+// Replaced with a unique value in the production build so every deployment
+// installs a new worker and can move an open PWA onto the new app version.
+const BUILD_ID = "__RAVAN_BUILD_ID__";
+const CACHE = `${CACHE_PREFIX}${BUILD_ID}`;
 const LANDING_PAGE = "./";
 const APP_PAGE = "./app/";
 const SHELL = [
@@ -54,8 +57,18 @@ self.addEventListener("activate", (event) => {
             .map((key) => caches.delete(key)),
         ),
       )
-      .then(() => self.clients.claim()),
+      .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: "window" }))
+      .then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: "RAVAN_SW_ACTIVATED", buildId: BUILD_ID });
+        });
+      }),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 function fallbackPageFor(requestUrl) {

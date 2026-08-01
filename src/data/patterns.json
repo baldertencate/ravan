@@ -62,7 +62,7 @@
   },
   {
     "id": "p-possessive",
-    "form": "ـم / ـت / ـش\nـمان / ـتان / ـشان",
+    "form": "ـم / ـت / ـش /\nـمان / ـتان / ـشان",
     "chunk": "ش",
     "name": "Possessive endings",
     "meaning": "Small endings can mean my, your, his/her, our, or their.",
@@ -79,7 +79,7 @@
   },
   {
     "id": "p-endings",
-    "form": "ـم / ـی / ـد\nـیم / ـید / ـند",
+    "form": "ـم / ـی / ـد /\nـیم / ـید / ـند",
     "chunk": "م",
     "name": "Verb person endings",
     "meaning": "The ending tells you who is doing the action.",
