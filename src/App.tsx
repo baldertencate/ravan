@@ -161,8 +161,23 @@ const DEBUG_UNLOCK_NOTICE =
   REQUESTED_DEBUG_UNLOCK <= LEVELS.length
     ? REQUESTED_DEBUG_UNLOCK
     : null;
+const REQUESTED_DEBUG_COMPLETION = Number(SEARCH_PARAMS.get("complete"));
+const DEBUG_COMPLETION_NOTICE =
+  DEBUG_MODE &&
+  Number.isInteger(REQUESTED_DEBUG_COMPLETION) &&
+  REQUESTED_DEBUG_COMPLETION >= 1 &&
+  REQUESTED_DEBUG_COMPLETION <= LEVELS.length
+    ? REQUESTED_DEBUG_COMPLETION
+    : null;
+const REQUESTED_DEBUG_BUD = Number(SEARCH_PARAMS.get("bud"));
+const DEBUG_FINAL_BUD_NOTICE =
+  DEBUG_MODE && REQUESTED_DEBUG_BUD === LEVELS.length ? LEVELS.length : null;
+const DEBUG_ALL_LEVELS_NOTICE = DEBUG_MODE && SEARCH_PARAMS.get("allComplete") === "1";
 const ACTIVE_STORAGE_KEY = DEBUG_MODE ? DEBUG_STORAGE_KEY : STORAGE_KEY;
 const ACTIVE_DONATION_KEY = DEBUG_MODE ? DEBUG_DONATION_KEY : DONATION_KEY;
+const REDUCED_MOTION = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+const MASTERY_CELEBRATION_DURATION = REDUCED_MOTION ? 400 : 4_400;
+const CELEBRATION_NOTICE_DELAY = REDUCED_MOTION ? 250 : 4_000;
 const MASTERY_STAGES = [
   {
     threshold: 10,
@@ -896,13 +911,13 @@ export default function App() {
   const [answeredCorrectly, setAnsweredCorrectly] = useState<boolean | null>(null);
   const [session, setSession] = useState({ correct: 0, answers: 0 });
   const [showReadingHelp, setShowReadingHelp] = useState(false);
-  const [showFlowerTooltip, setShowFlowerTooltip] = useState(false);
   const [showLevelPicker, setShowLevelPicker] = useState(false);
   const [showVowels, setShowVowels] = useState(() => localStorage.getItem(VOWEL_KEY) === "true");
   const [exerciseKind, setExerciseKind] = useState<"item" | "pattern">("item");
   const [patternExercise, setPatternExercise] = useState<PatternExercise | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(shouldShowOnboarding);
   const [onboardingStep, setOnboardingStep] = useState(0);
+  const [showHelp, setShowHelp] = useState(false);
   const [reminder, setReminder] = useState<ReminderSettings>(loadReminder);
   const [haptics, setHaptics] = useState(() => localStorage.getItem(HAPTICS_KEY) !== "false");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
@@ -910,6 +925,15 @@ export default function App() {
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(DEBUG_UNLOCK_NOTICE);
+  const [levelCompletionNotice, setLevelCompletionNotice] = useState<number | null>(
+    DEBUG_COMPLETION_NOTICE,
+  );
+  const [finalLevelBudNotice, setFinalLevelBudNotice] = useState<number | null>(
+    DEBUG_FINAL_BUD_NOTICE,
+  );
+  const [allLevelsMasteredNotice, setAllLevelsMasteredNotice] = useState(
+    DEBUG_ALL_LEVELS_NOTICE,
+  );
   const [showUnlockReminderSetup, setShowUnlockReminderSetup] = useState(false);
   const [hideUnlockReturnOptions, setHideUnlockReturnOptions] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -920,6 +944,7 @@ export default function App() {
   const [masteryCelebration, setMasteryCelebration] = useState<MasteryCelebration | null>(null);
   const startedAt = useRef(Date.now());
   const masteryCelebrationTimer = useRef<number | null>(null);
+  const celebrationNoticeTimer = useRef<number | null>(null);
   const awardedStageRef = useRef("");
 
   useEffect(
@@ -933,6 +958,9 @@ export default function App() {
     () => () => {
       if (masteryCelebrationTimer.current) {
         window.clearTimeout(masteryCelebrationTimer.current);
+      }
+      if (celebrationNoticeTimer.current) {
+        window.clearTimeout(celebrationNoticeTimer.current);
       }
     },
     [],
@@ -949,11 +977,28 @@ export default function App() {
     const awardKey = `${progress.activeLevel}-${eligibleStage.threshold}`;
     if (awardedStageRef.current === awardKey) return;
     awardedStageRef.current = awardKey;
-    const unlocksNextLevel =
+    const reachesBud =
       eligibleStage.threshold >= LEVEL_UNLOCK_STREAK &&
-      currentMastery.earnedThreshold < LEVEL_UNLOCK_STREAK &&
-      progress.activeLevel < LEVELS.length &&
+      currentMastery.earnedThreshold < LEVEL_UNLOCK_STREAK;
+    const hasNextLevel = progress.activeLevel < LEVELS.length;
+    const unlocksNextLevel =
+      reachesBud &&
+      hasNextLevel &&
       progress.highestLevel < progress.activeLevel + 1;
+    const showsNextLevelUnlock =
+      reachesBud && hasNextLevel && (unlocksNextLevel || DEBUG_MODE);
+    const showsFinalLevelBud = reachesBud && !hasNextLevel;
+    const completesLevel =
+      eligibleStage.threshold === MASTERY_STAGES.at(-1)!.threshold;
+    const completesAllAvailableLevels =
+      completesLevel &&
+      LEVELS.every((_, index) => {
+        const level = index + 1;
+        return (
+          level === progress.activeLevel ||
+          levelMastery(progress, level).earnedThreshold >= MASTERY_STAGES.at(-1)!.threshold
+        );
+      });
 
     setProgress((current) => {
       const mastery = levelMastery(current);
@@ -982,13 +1027,47 @@ export default function App() {
     });
     masteryCelebrationTimer.current = window.setTimeout(
       () => setMasteryCelebration(null),
-      1_600,
+      MASTERY_CELEBRATION_DURATION,
     );
 
-    if (unlocksNextLevel) {
+    if (celebrationNoticeTimer.current) {
+      window.clearTimeout(celebrationNoticeTimer.current);
+    }
+    if (completesLevel) {
+      flowerGrowthHaptic(eligibleStage.threshold);
+      celebrationNoticeTimer.current = window.setTimeout(
+        () => {
+          if (completesAllAvailableLevels) {
+            setAllLevelsMasteredNotice(true);
+          } else {
+            setLevelCompletionNotice(progress.activeLevel);
+          }
+        },
+        CELEBRATION_NOTICE_DELAY,
+      );
+      if (unlocksNextLevel) {
+        trackEvent("Level Unlocked", { level: progress.activeLevel + 1 });
+      }
+      trackEvent("Level Completed", { level: progress.activeLevel });
+      if (completesAllAvailableLevels) {
+        trackEvent("All Levels Mastered", { levels: LEVELS.length });
+      }
+    } else if (showsNextLevelUnlock) {
       levelUnlockHaptic();
-      setLevelUnlockNotice(progress.activeLevel + 1);
-      trackEvent("Level Unlocked", { level: progress.activeLevel + 1 });
+      celebrationNoticeTimer.current = window.setTimeout(
+        () => setLevelUnlockNotice(progress.activeLevel + 1),
+        CELEBRATION_NOTICE_DELAY,
+      );
+      if (unlocksNextLevel) {
+        trackEvent("Level Unlocked", { level: progress.activeLevel + 1 });
+      }
+    } else if (showsFinalLevelBud) {
+      flowerGrowthHaptic(eligibleStage.threshold);
+      celebrationNoticeTimer.current = window.setTimeout(
+        () => setFinalLevelBudNotice(progress.activeLevel),
+        CELEBRATION_NOTICE_DELAY,
+      );
+      trackEvent("Latest Level Bud Earned", { level: progress.activeLevel });
     } else {
       flowerGrowthHaptic(eligibleStage.threshold);
     }
@@ -1035,9 +1114,7 @@ export default function App() {
     ? masteryStage(masteryCelebration.threshold)
     : null;
   const showProminentMasteryCelebration =
-    masteryCelebration?.level === progress.activeLevel &&
-    (celebratedMasteryStage?.name === "Sprout" ||
-      celebratedMasteryStage?.name === "Bloom");
+    masteryCelebration?.level === progress.activeLevel && Boolean(celebratedMasteryStage);
   const masteryTarget = upcomingMasteryStage?.threshold ?? MASTERY_STAGES.at(-1)!.threshold;
   const requiredMasteredItems = upcomingMasteryStage
     ? requiredItemsForStage(activeEvidence.itemCount, upcomingMasteryStage.coverage)
@@ -1079,7 +1156,10 @@ export default function App() {
   })();
   const canGraduate =
     progress.activeLevel < LEVELS.length &&
-    progress.highestLevel > progress.activeLevel;
+    progress.highestLevel > progress.activeLevel &&
+    activeMastery.earnedThreshold >= LEVEL_UNLOCK_STREAK;
+  const activeLevelCompleted =
+    activeMastery.earnedThreshold >= MASTERY_STAGES.at(-1)!.threshold;
   const accuracy = progress.totalAnswers
     ? Math.round((progress.totalCorrect / progress.totalAnswers) * 100)
     : 0;
@@ -1120,12 +1200,16 @@ export default function App() {
 
   function levelUnlockHaptic() {
     if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate(180);
+    navigator.vibrate([90, 65, 135, 75, 190, 90, 285]);
   }
 
   function flowerGrowthHaptic(threshold: number) {
     if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate(threshold === 25 ? [35, 35, 75] : [30, 30, 50]);
+    navigator.vibrate(
+      threshold === 25
+        ? [90, 60, 140, 70, 200, 80, 300, 95, 380]
+        : [75, 55, 110, 65, 165, 80, 245],
+    );
   }
 
   async function installApp() {
@@ -1484,10 +1568,9 @@ export default function App() {
     trackEvent("Level Entered", { level: nextLevel, source: "unlock" });
   }
 
-  function enterLevel(level: number, source: "picker" | "journey") {
+  function enterLevel(level: number, source: "picker" | "journey" | "completion") {
     if (level > unlockedLevel) return;
     setShowLevelPicker(false);
-    setShowFlowerTooltip(false);
     if (level === progress.activeLevel) {
       setTab("learn");
       return;
@@ -1513,6 +1596,10 @@ export default function App() {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      if (showHelp) {
+        if (event.key === "Escape") setShowHelp(false);
+        return;
+      }
       if (tab !== "learn") return;
       if (showLevelPicker) {
         if (event.key === "Escape") setShowLevelPicker(false);
@@ -1685,6 +1772,96 @@ export default function App() {
           </section>
         </div>
       )}
+      {showHelp && (
+        <div
+          className="level-unlock-backdrop help-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setShowHelp(false);
+          }}
+        >
+          <section
+            className="help-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="help-title"
+          >
+            <header className="help-splash-header">
+              <div>
+                <span className="eyebrow">HOW RAVÂN WORKS</span>
+                <h2 id="help-title">How to use Ravân</h2>
+              </div>
+              <button
+                type="button"
+                className="help-close"
+                onClick={() => setShowHelp(false)}
+                aria-label="Close help"
+                autoFocus
+              >
+                ×
+              </button>
+            </header>
+            <div className="help-guide">
+              <section>
+                <h3>During an exercise</h3>
+                <p>
+                  Read the Persian word or phrase and choose an answer. Ravân first checks
+                  pronunciation; after you get that right, the same item can be tested for meaning.
+                  Press <strong>Continue</strong> after the explanation to move on. Missed items
+                  return more often.
+                </p>
+              </section>
+              <section>
+                <h3>Mastered</h3>
+                <p>
+                  A word or phrase is mastered after you answer both its pronunciation and meaning
+                  correctly at least once. A later wrong answer removes its mastered status until
+                  you prove both again.
+                </p>
+              </section>
+              <section>
+                <h3>Streaks</h3>
+                <p>
+                  Your current streak is the number of consecutive correct answers in this level.
+                  A wrong answer resets it to zero; your longest streak stays. Flower growth uses
+                  that longest streak, so mastery and the streak requirement do not have to be
+                  completed at the same moment.
+                </p>
+              </section>
+              <section>
+                <h3>Flower stages</h3>
+                <div className="help-flower-stages">
+                  {MASTERY_STAGES.map((stage) => (
+                    <div key={stage.name}>
+                      <img src={stage.image} alt="" aria-hidden="true" />
+                      <span>
+                        <strong>{stage.name}</strong>
+                        <small>
+                          {Math.round(stage.coverage * 100)}% mastered · longest streak {stage.threshold}
+                          {stage.name === "Bud" ? " · unlocks the next level when available" : ""}
+                        </small>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="help-flower-note">
+                  Bouquet also requires every pattern assigned to the level. Flower stages never
+                  disappear once earned.
+                </p>
+              </section>
+              <section>
+                <h3>Helpful tabs at the bottom</h3>
+                <div className="help-tab-guide">
+                  <div><i>◉</i><span><strong>Practice</strong><small>Do exercises</small></span></div>
+                  <div><i lang="fa">ا</i><span><strong>Alphabet</strong><small>Look up letter shapes</small></span></div>
+                  <div><i>≡</i><span><strong>Words</strong><small>Review vocabulary and patterns</small></span></div>
+                  <div><i>↗</i><span><strong>Journey</strong><small>See levels, flowers, and statistics</small></span></div>
+                  <div><i>⚙</i><span><strong>Settings</strong><small>Manage app preferences</small></span></div>
+                </div>
+              </section>
+            </div>
+          </section>
+        </div>
+      )}
       {showResetConfirm && (
         <div className="level-unlock-backdrop">
           <section
@@ -1716,7 +1893,181 @@ export default function App() {
           </section>
         </div>
       )}
-      {levelUnlockNotice && !showDonationThanks && (
+      {allLevelsMasteredNotice && !showDonationThanks && (
+        <div className="level-unlock-backdrop">
+          <section
+            className="level-unlock-splash all-levels-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="all-levels-mastered-title"
+          >
+            <div className="all-levels-bouquets" aria-hidden="true">
+              {LEVELS.map((level) => (
+                <img
+                  key={level.title}
+                  src={MASTERY_STAGES.at(-1)!.image}
+                  alt=""
+                />
+              ))}
+            </div>
+            <span className="eyebrow">ALL AVAILABLE LEVELS MASTERED</span>
+            <h2 id="all-levels-mastered-title">
+              Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
+            </h2>
+            <p>You have grown a bouquet in every level!</p>
+            <div className="level-unlock-growth">
+              <strong>You have mastered every level currently available.</strong>
+              <span>
+                More levels may be added in the future. Come back any time to keep your reading
+                fresh—and to see what grows next.
+              </span>
+            </div>
+            <div className="level-unlock-actions">
+              <button
+                className="primary-action"
+                onClick={() => setAllLevelsMasteredNotice(false)}
+                autoFocus
+              >
+                Return to practice
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {levelCompletionNotice && !allLevelsMasteredNotice && !showDonationThanks && (
+        <div className="level-unlock-backdrop">
+          <section
+            className="level-unlock-splash level-completion-splash"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="level-completion-title"
+          >
+            <div className="level-unlock-flower-wrap" aria-hidden="true">
+              <img
+                className="level-unlock-flower"
+                src={MASTERY_STAGES.at(-1)!.image}
+                alt=""
+              />
+              <i>✦</i>
+              <i>✦</i>
+              <i>✦</i>
+            </div>
+            <span className="eyebrow">LEVEL FULLY MASTERED</span>
+            <h2 id="level-completion-title">
+              Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
+            </h2>
+            <p>Level {levelCompletionNotice} completed!</p>
+            <div className="level-unlock-growth">
+              <strong>Your flower has grown into a bouquet.</strong>
+              <span>
+                {levelCompletionNotice === LEVELS.length
+                  ? `Level ${levelCompletionNotice} is the last level currently available. More levels may be added in the future, and you can return to any level whenever you want to keep practising.`
+                  : `You can always return to Level ${levelCompletionNotice} from the level selector whenever you want to keep practising.`}
+              </span>
+            </div>
+            <div className="level-unlock-actions">
+              {levelCompletionNotice < LEVELS.length ? (
+                <>
+                  <button
+                    className="primary-action"
+                    onClick={() => {
+                      const nextLevel = levelCompletionNotice + 1;
+                      setLevelCompletionNotice(null);
+                      enterLevel(nextLevel, "completion");
+                    }}
+                    autoFocus
+                  >
+                    Go to Level {levelCompletionNotice + 1} <span>→</span>
+                  </button>
+                  <span className="level-unlock-or">or</span>
+                  <button
+                    className="text-action"
+                    onClick={() => setLevelCompletionNotice(null)}
+                  >
+                    Keep practising Level {levelCompletionNotice}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="primary-action"
+                    onClick={() => setLevelCompletionNotice(null)}
+                    autoFocus
+                  >
+                    Keep practising Level {levelCompletionNotice}
+                  </button>
+                  <span className="level-unlock-or">or</span>
+                  <button
+                    className="text-action"
+                    onClick={() => {
+                      setLevelCompletionNotice(null);
+                      setShowLevelPicker(true);
+                    }}
+                  >
+                    Choose another level
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+      {finalLevelBudNotice &&
+        !allLevelsMasteredNotice &&
+        !levelCompletionNotice &&
+        !showDonationThanks && (
+          <div className="level-unlock-backdrop">
+            <section
+              className="level-unlock-splash final-level-bud-splash"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="final-level-bud-title"
+            >
+              <div className="level-unlock-flower-wrap" aria-hidden="true">
+                <img className="level-unlock-flower" src={MASTERY_STAGES[1].image} alt="" />
+                <i>✦</i>
+                <i>✦</i>
+                <i>✦</i>
+              </div>
+              <span className="eyebrow">LATEST LEVEL MILESTONE</span>
+              <h2 id="final-level-bud-title">
+                Barikala <span lang="fa" dir="rtl">(باریکلا)</span>
+              </h2>
+              <p>Bud earned in Level {finalLevelBudNotice}!</p>
+              <div className="level-unlock-growth">
+                <strong>You reached Bud in the latest available level.</strong>
+                <span>
+                  More levels may be added in the future. For now, keep growing this flower or
+                  revisit any earlier level.
+                </span>
+              </div>
+              <div className="level-unlock-actions">
+                <button
+                  className="primary-action"
+                  onClick={() => setFinalLevelBudNotice(null)}
+                  autoFocus
+                >
+                  Keep growing Level {finalLevelBudNotice}
+                </button>
+                <span className="level-unlock-or">or</span>
+                <button
+                  className="text-action"
+                  onClick={() => {
+                    setFinalLevelBudNotice(null);
+                    setShowLevelPicker(true);
+                  }}
+                >
+                  Choose another level
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
+      {levelUnlockNotice &&
+        !finalLevelBudNotice &&
+        !allLevelsMasteredNotice &&
+        !levelCompletionNotice &&
+        !showDonationThanks && (
         <div className="level-unlock-backdrop">
           <section
             className={`level-unlock-splash ${
@@ -1878,13 +2229,19 @@ export default function App() {
           <span className="brand-mark" lang="fa" dir="rtl">روان</span>
           <span className="brand-copy"><strong>Ravân</strong><small>Learn to Read Farsi</small></span>
         </button>
+        <div className="topbar-actions">
+          {DEBUG_MODE && <span className="debug-badge">TEST MODE</span>}
+          <button type="button" className="help-button" onClick={() => setShowHelp(true)}>
+            Help
+          </button>
+        </div>
       </header>
 
       <main>
         {tab === "learn" && (
           <section className="learn-view">
             <div
-              className={`graduation-card ${canGraduate ? "ready" : ""} ${
+              className={`graduation-card ${canGraduate || activeLevelCompleted ? "ready" : ""} ${
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
               } ${showProminentMasteryCelebration ? "major-flower-celebrating" : ""}`}
             >
@@ -1892,10 +2249,7 @@ export default function App() {
                 <button
                   type="button"
                   className="current-level-number"
-                  onClick={() => {
-                    setShowFlowerTooltip(false);
-                    setShowLevelPicker((visible) => !visible);
-                  }}
+                  onClick={() => setShowLevelPicker((visible) => !visible)}
                   aria-label={`Choose practice level. Current level ${progress.activeLevel}`}
                   aria-haspopup="dialog"
                   aria-expanded={showLevelPicker}
@@ -1903,18 +2257,20 @@ export default function App() {
                 >
                   <span>LEVEL</span>
                   <strong>{progress.activeLevel}</strong>
+                  <i className="level-selector-cue" aria-hidden="true" />
                 </button>
-                <span className={`mastery-flower-wrap ${showFlowerTooltip ? "open" : ""}`}>
+                <span className="mastery-flower-wrap">
                   <button
                     type="button"
                     className={`mastery-flower ${
                       masteryCelebration?.level === progress.activeLevel ? "celebrating" : ""
                     } ${showProminentMasteryCelebration ? "major-celebrating" : ""}`}
-                    onClick={() => setShowFlowerTooltip((visible) => !visible)}
-                    onBlur={() => setShowFlowerTooltip(false)}
-                    aria-expanded={showFlowerTooltip}
+                    onClick={() => setShowLevelPicker((visible) => !visible)}
+                    aria-haspopup="dialog"
+                    aria-expanded={showLevelPicker}
+                    aria-controls="practice-level-picker"
                     aria-describedby="mastery-flower-tooltip"
-                    aria-label={`Flower progress. ${
+                    aria-label={`Choose practice level. Flower progress: ${
                       earnedMasteryStage
                         ? `${earnedMasteryStage.name} earned.`
                         : "Grow your first sprout."
@@ -2009,7 +2365,7 @@ export default function App() {
                   <div className="mastery-item-progress">
                     <span className="progress-label">
                       Mastered:{" "}
-                      <strong>{activeEvidence.masteredItems}</strong>
+                      <strong>{activeEvidence.masteredItems}/{activeEvidence.itemCount}</strong>
                     </span>
                     <div
                       className="graduation-track word-goal"
@@ -2046,11 +2402,12 @@ export default function App() {
                     </div>
                   </div>
                   <div className="streak-progress">
-                    <span className="progress-label">
-                      Streak: <strong>{activeMastery.currentStreak}</strong>
-                      <small aria-label={`Best streak ${activeMastery.bestStreak}`}>
-                        ({activeMastery.bestStreak})
-                      </small>
+                    <span
+                      className="progress-label"
+                      aria-label={`Streak: best ${activeMastery.bestStreak}; current ${activeMastery.currentStreak}`}
+                    >
+                      Longest streak: <strong>{activeMastery.bestStreak}</strong>
+                      <small>(now {activeMastery.currentStreak})</small>
                     </span>
                     <div
                       className="graduation-track streak-goal"
@@ -2089,9 +2446,15 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              {canGraduate && (
-                <button className="graduate-button" onClick={graduate}>
-                  Move up <span>→</span>
+              {(canGraduate || activeLevelCompleted) && (
+                <button className="graduate-button" onClick={() => setShowLevelPicker(true)}>
+                  {activeLevelCompleted ? (
+                    "Level completed"
+                  ) : (
+                    <>
+                      Move up <span>→</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -2104,7 +2467,6 @@ export default function App() {
                     ? "Read the phrase"
                     : "Read the word"}
               </h1>
-              {DEBUG_MODE && <span className="debug-badge">TEST MODE · ALL LEVELS</span>}
             </div>
 
             {exerciseKind === "item" ? (
@@ -2187,6 +2549,9 @@ export default function App() {
                           <span>{option.label}</span>
                         )}
                         {state === "correct" && <Icon name="check" />}
+                        {state === "wrong" && (
+                          <span className="answer-wrong-mark" aria-hidden="true">×</span>
+                        )}
                       </button>
                     );
                   })}
@@ -2239,6 +2604,9 @@ export default function App() {
                         <span className="answer-key">{index + 1}</span>
                         <span>{option.name}</span>
                         {state === "correct" && <Icon name="check" />}
+                        {state === "wrong" && (
+                          <span className="answer-wrong-mark" aria-hidden="true">×</span>
+                        )}
                       </button>
                     );
                   })}
@@ -2336,17 +2704,21 @@ export default function App() {
                     ? requiredItemsForStage(evidence.itemCount, nextStage.coverage)
                     : evidence.itemCount;
                   const itemPlural = `${evidence.itemLabel}s`;
-                  const levelProgressLabel = stage
-                    ? nextStage
-                      ? nextStage.threshold === MASTERY_STAGES.at(-1)!.threshold &&
-                        evidence.masteredItems >= nextItemTarget &&
-                        evidence.patternCount > 0
-                        ? `${stage.name} · ${evidence.masteredPatterns}/${evidence.patternCount} patterns to Bouquet`
-                        : `${stage.name} · ${evidence.masteredItems}/${nextItemTarget} ${itemPlural} to ${nextStage.name}`
-                      : `${stage.name} · complete`
-                    : `${evidence.masteredItems}/${nextItemTarget} ${itemPlural} to ${
-                        nextStage?.name ?? "Sprout"
-                      }`;
+                  const itemsReady = evidence.masteredItems >= nextItemTarget;
+                  const patternsRequired = Boolean(
+                    nextStage?.threshold === MASTERY_STAGES.at(-1)!.threshold &&
+                      evidence.patternCount > 0,
+                  );
+                  const patternsReady =
+                    !patternsRequired || evidence.masteredPatterns >= evidence.patternCount;
+                  const stagePrefix = stage ? `${stage.name} · ` : "";
+                  const levelProgressLabel = !nextStage
+                    ? `${stage?.name ?? "Bouquet"} · complete`
+                    : !itemsReady
+                      ? `${stagePrefix}${evidence.masteredItems}/${nextItemTarget} ${itemPlural} to ${nextStage.name}`
+                      : !patternsReady
+                        ? `${stagePrefix}${evidence.masteredPatterns}/${evidence.patternCount} patterns to ${nextStage.name}`
+                        : `${stagePrefix}Reach a streak of ${nextStage.threshold} to earn ${nextStage.name}`;
                   return (
                     <button
                       key={level.title}
@@ -2624,12 +2996,12 @@ export default function App() {
                   </div>
                 )}
                 <div className="preference-item">
-                  <span><strong>Gentle haptics</strong><small>A short tap for a wrong answer, a gentle pulse when a flower grows, and a longer tap when a new level unlocks.</small></span>
+                  <span><strong>Haptics</strong><small>Use phone vibration effects</small></span>
                   <button
                     type="button"
                     className="vowel-toggle settings-toggle"
                     role="switch"
-                    aria-label="Gentle haptics"
+                    aria-label="Haptics"
                     aria-checked={haptics}
                     onClick={() => setHaptics((enabled) => !enabled)}
                   >
@@ -2780,10 +3152,10 @@ export default function App() {
       </main>
 
       <nav className="bottom-nav" aria-label="Main navigation">
-        {(["learn", "journey", "alphabet", "words", "settings"] as Tab[]).map((item) => (
+        {(["learn", "alphabet", "words", "journey", "settings"] as Tab[]).map((item) => (
           <button
             key={item}
-            className={tab === item ? "active" : ""}
+            className={`nav-${item} ${tab === item ? "active" : ""}`}
             aria-current={tab === item ? "page" : undefined}
             onClick={() => {
               setTab(item);

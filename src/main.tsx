@@ -18,17 +18,45 @@ createRoot(document.getElementById("root")!).render(
 if ("serviceWorker" in navigator) {
   const shouldReloadForUpdate = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
+  let reloadWhenVisible = false;
 
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
+  const reloadForUpdate = () => {
     if (!shouldReloadForUpdate || reloading) return;
+    if (document.visibilityState === "hidden") {
+      reloadWhenVisible = true;
+      return;
+    }
     reloading = true;
     window.location.reload();
+  };
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    reloadForUpdate();
+  });
+
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data?.type === "RAVAN_SW_ACTIVATED") reloadForUpdate();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && reloadWhenVisible) reloadForUpdate();
   });
 
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register(`${import.meta.env.BASE_URL}sw.js`, { updateViaCache: "none" })
-      .then((registration) => registration.update())
+      .then((registration) => {
+        if (registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+
+        const checkForUpdate = () => registration.update().catch(() => undefined);
+        void checkForUpdate();
+
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") void checkForUpdate();
+        });
+      })
       .catch(() => {
         // The app remains usable online if service-worker setup is unavailable.
       });

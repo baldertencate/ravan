@@ -39,7 +39,10 @@ confusing pronunciation details.
 Open `/app/?debug=1` to use isolated test progress with every level unlocked. Add a level number to
 open directly at that level, for example `/app/?debug=1&level=6`. Test-mode activity is stored
 separately from normal progress. To preview a level-unlock celebration, add `unlock=4` (or another
-level number), for example `/app/?debug=1&level=3&unlock=4`.
+level number), for example `/app/?debug=1&level=3&unlock=4`. Use `bud=6` for the latest-level Bud
+screen, `complete=6` for its Bouquet screen, or `allComplete=1` for the all-levels mastery screen.
+Reaching Bud naturally in test mode also shows the appropriate celebration even though every level
+is already available.
 Test-mode activity is excluded from explicit analytics events.
 
 ## Run locally
