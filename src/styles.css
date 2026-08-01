@@ -1393,12 +1393,17 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   font-size: 10px; color: #7f857d; cursor: pointer;
   transition: background .2s ease, color .2s ease, box-shadow .2s ease;
 }
-.bottom-nav button > span:first-child { font-size: 18px; }
-.bottom-nav .nav-alphabet > span:first-child {
-  font-family: "Noto Naskh Arabic", serif; font-size: 24px; line-height: 1;
+.bottom-nav button > span:first-child {
+  width: 26px; height: 26px; flex: 0 0 26px;
+  display: grid; place-items: center;
+  font-size: 22px; line-height: 1;
 }
-.bottom-nav .nav-words > span:first-child { font-size: 23px; line-height: 1; }
-.bottom-nav .nav-settings > span:first-child { font-size: 24px; line-height: 1; }
+.bottom-nav .nav-alphabet > span:first-child {
+  font-family: "Noto Naskh Arabic", serif; font-size: 28px;
+}
+.bottom-nav .nav-words > span:first-child { font-size: 30px; }
+.bottom-nav .nav-journey > span:first-child { font-size: 27px; }
+.bottom-nav .nav-settings > span:first-child { font-size: 31px; }
 .bottom-nav button.active {
   background: var(--sage); color: var(--green-dark); font-weight: 800;
   box-shadow: inset 0 0 0 1px rgba(46, 93, 69, .1);
