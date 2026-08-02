@@ -2245,20 +2245,7 @@ export default function App() {
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
               } ${showProminentMasteryCelebration ? "major-flower-celebrating" : ""}`}
             >
-              <div className="current-level">
-                <button
-                  type="button"
-                  className="current-level-number"
-                  onClick={() => setShowLevelPicker((visible) => !visible)}
-                  aria-label={`Choose practice level. Current level ${progress.activeLevel}`}
-                  aria-haspopup="dialog"
-                  aria-expanded={showLevelPicker}
-                  aria-controls="practice-level-picker"
-                >
-                  <span>LEVEL</span>
-                  <strong>{progress.activeLevel}</strong>
-                  <i className="level-selector-cue" aria-hidden="true" />
-                </button>
+              <div className="mastery-visual">
                 <span className="mastery-flower-wrap">
                   <button
                     type="button"
@@ -2361,12 +2348,46 @@ export default function App() {
                 )}
               </div>
               <div className="graduation-copy">
+                <div className="progress-summary">
+                  <button
+                    type="button"
+                    className="current-level-number"
+                    onClick={() => setShowLevelPicker((visible) => !visible)}
+                    aria-label={`Choose practice level. Current level ${progress.activeLevel}`}
+                    aria-haspopup="dialog"
+                    aria-expanded={showLevelPicker}
+                    aria-controls="practice-level-picker"
+                  >
+                    <span>LEVEL</span>
+                    <strong>{progress.activeLevel}</strong>
+                    <i className="level-selector-cue" aria-hidden="true" />
+                  </button>
+                  <div className="progress-summary-stats">
+                    <span className="progress-label">
+                      Mastered: <strong>{activeEvidence.masteredItems}/{activeEvidence.itemCount}</strong>
+                    </span>
+                    <span
+                      className="progress-label"
+                      aria-label={`Streak: best ${activeMastery.bestStreak}; current ${activeMastery.currentStreak}`}
+                    >
+                      Longest streak: <strong>{activeMastery.bestStreak}</strong>
+                      <small>(now {activeMastery.currentStreak})</small>
+                    </span>
+                  </div>
+                  {(canGraduate || activeLevelCompleted) && (
+                    <button className="graduate-button" onClick={() => setShowLevelPicker(true)}>
+                      {activeLevelCompleted ? (
+                        "Level completed"
+                      ) : (
+                        <>
+                          Level up <span>→</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
                 <div className="mastery-goals">
                   <div className="mastery-item-progress">
-                    <span className="progress-label">
-                      Mastered:{" "}
-                      <strong>{activeEvidence.masteredItems}/{activeEvidence.itemCount}</strong>
-                    </span>
                     <div
                       className="graduation-track word-goal"
                       aria-label={`${activeEvidence.masteredItems} of ${activeEvidence.itemCount} ${activeItemPlural} mastered across Level ${progress.activeLevel}`}
@@ -2402,13 +2423,6 @@ export default function App() {
                     </div>
                   </div>
                   <div className="streak-progress">
-                    <span
-                      className="progress-label"
-                      aria-label={`Streak: best ${activeMastery.bestStreak}; current ${activeMastery.currentStreak}`}
-                    >
-                      Longest streak: <strong>{activeMastery.bestStreak}</strong>
-                      <small>(now {activeMastery.currentStreak})</small>
-                    </span>
                     <div
                       className="graduation-track streak-goal"
                       aria-label={`Current streak ${activeMastery.currentStreak}; best streak ${activeMastery.bestStreak}; Bouquet bar maximum ${MASTERY_STAGES.at(-1)!.threshold}`}
@@ -2446,17 +2460,6 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              {(canGraduate || activeLevelCompleted) && (
-                <button className="graduate-button" onClick={() => setShowLevelPicker(true)}>
-                  {activeLevelCompleted ? (
-                    "Level completed"
-                  ) : (
-                    <>
-                      Move up <span>→</span>
-                    </>
-                  )}
-                </button>
-              )}
             </div>
 
             <div className="session-row">
@@ -2467,23 +2470,23 @@ export default function App() {
                     ? "Read the phrase"
                     : "Read the word"}
               </h1>
+              {exerciseKind === "item" && (
+                <button
+                  type="button"
+                  className="vowel-toggle heading-vowel-toggle"
+                  role="switch"
+                  aria-checked={showVowels}
+                  onClick={() => setShowVowels((visible) => !visible)}
+                >
+                  <span className="toggle-track"><span /></span>
+                  Vowel marks
+                </button>
+              )}
             </div>
 
             {exerciseKind === "item" ? (
               <>
                 <article className={`word-card ${selected ? "answered" : ""}`}>
-                  <div className="card-topline">
-                    <button
-                      type="button"
-                      className="vowel-toggle card-vowel-toggle"
-                      role="switch"
-                      aria-checked={showVowels}
-                      onClick={() => setShowVowels((visible) => !visible)}
-                    >
-                      <span className="toggle-track"><span /></span>
-                      Vowel marks
-                    </button>
-                  </div>
                   <div
                     className={`persian-word ${
                       question.word.kind === "phrase" ? "phrase" : ""
@@ -2505,7 +2508,9 @@ export default function App() {
                   <p className="prompt">
                     Choose the correct{" "}
                     {question.mode === "meaning"
-                      ? "meaning"
+                      ? matchedPattern
+                        ? `meaning of the full ${question.word.kind === "phrase" ? "phrase" : "word"}`
+                        : "meaning"
                       : question.mode === "segmentation"
                         ? "word boundaries"
                         : "pronunciation"}
