@@ -1650,7 +1650,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     gap: 8px;
   }
 
-  .progress-summary .current-level-number strong { font-size: 68px; }
+  .progress-summary .current-level-number > span { top: 9px; }
+  .progress-summary .current-level-number strong { font-size: 64px; }
   .progress-summary-stats { gap: 7px; margin-left: 4px; }
   .progress-summary-stats .progress-label { font-size: 11px; font-weight: 400; }
   .progress-summary-stats .progress-label strong { font-size: 12px; font-weight: 600; }
