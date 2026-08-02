@@ -576,6 +576,10 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   background: linear-gradient(135deg, var(--green-surface), var(--green-surface-strong));
   border-color: #a9c1a8;
 }
+.graduation-card.bouquet-complete {
+  border-color: rgba(203, 157, 58, .58);
+  box-shadow: 0 0 0 2px rgba(238, 203, 115, .18), 0 10px 24px rgba(46, 93, 69, .09);
+}
 .mastery-visual {
   min-height: 106px;
   display: grid; place-items: center;
@@ -628,6 +632,14 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .level-picker-option.current {
   border-color: rgba(46, 93, 69, .3); background: var(--sage);
   box-shadow: inset 3px 0 0 var(--green);
+}
+.level-picker-option.bouquet-complete {
+  border-color: rgba(203, 157, 58, .48);
+  background: linear-gradient(135deg, #fffdf5, #f7eed2);
+  box-shadow: 0 0 0 1px rgba(238, 203, 115, .16), 0 4px 15px rgba(188, 139, 34, .16);
+}
+.level-picker-option.current.bouquet-complete {
+  box-shadow: inset 3px 0 0 var(--green), 0 0 0 1px rgba(238, 203, 115, .16), 0 4px 15px rgba(188, 139, 34, .16);
 }
 .level-picker-option:disabled { opacity: .43; cursor: not-allowed; }
 .level-picker-number { display: flex; flex-direction: column; align-items: center; }
@@ -1175,6 +1187,11 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .level-list { display: grid; gap: 7px; }
 .level-row { border: 0; background: #f6f3ec; border-radius: 13px; display: grid; grid-template-columns: 32px minmax(0, 1fr) 76px auto; align-items: center; gap: 10px; text-align: left; padding: 9px 11px; cursor: pointer; }
 .level-row.active { background: var(--sage); }
+.level-row.bouquet-complete {
+  background: linear-gradient(135deg, #fffdf5, #f7eed2);
+  box-shadow: 0 0 0 1px rgba(203, 157, 58, .38), 0 5px 18px rgba(188, 139, 34, .14);
+}
+.level-row.active.bouquet-complete { box-shadow: inset 3px 0 0 var(--green), 0 0 0 1px rgba(203, 157, 58, .38), 0 5px 18px rgba(188, 139, 34, .14); }
 .level-row:disabled { opacity: .48; cursor: not-allowed; }
 .level-number { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 9px; background: #fff; font-size: 11px; font-weight: 700; }
 .level-row > span:nth-child(2) { display: flex; flex-direction: column; gap: 2px; }
@@ -1589,7 +1606,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     min-height: 30px;
     width: auto;
     padding: 6px 5px;
-    font-size: 8px;
+    font-size: 9px;
   }
 
   .mastery-visual {
@@ -1655,7 +1672,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   .progress-summary-stats { gap: 7px; margin-left: 4px; }
   .progress-summary-stats .progress-label { font-size: 11px; font-weight: 400; }
   .progress-summary-stats .progress-label strong { font-size: 12px; font-weight: 600; }
-  .progress-summary-stats .progress-label small { margin-inline-start: 3px; font-size: 8px; font-weight: 500; }
+  .progress-summary-stats .progress-label small { margin-inline-start: 3px; font-size: 11px; font-weight: 400; }
 
   .mastery-goals { gap: 10px; }
 
