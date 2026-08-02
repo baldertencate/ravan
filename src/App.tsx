@@ -2242,6 +2242,8 @@ export default function App() {
           <section className="learn-view">
             <div
               className={`graduation-card ${canGraduate || activeLevelCompleted ? "ready" : ""} ${
+                activeLevelCompleted ? "bouquet-complete" : ""
+              } ${
                 masteryCelebration?.level === progress.activeLevel ? "flower-celebrating" : ""
               } ${showProminentMasteryCelebration ? "major-flower-celebrating" : ""}`}
             >
@@ -2314,7 +2316,7 @@ export default function App() {
                           return (
                             <button
                               type="button"
-                              className={`level-picker-option ${current ? "current" : ""}`}
+                              className={`level-picker-option ${current ? "current" : ""} ${stage?.name === "Bouquet" ? "bouquet-complete" : ""}`}
                               key={level.title}
                               disabled={locked}
                               aria-current={current ? "true" : undefined}
@@ -2727,7 +2729,7 @@ export default function App() {
                   return (
                     <button
                       key={level.title}
-                      className={`level-row ${active ? "active" : ""}`}
+                      className={`level-row ${active ? "active" : ""} ${stage?.name === "Bouquet" ? "bouquet-complete" : ""}`}
                       disabled={locked}
                       onClick={() => enterLevel(number, "journey")}
                     >
