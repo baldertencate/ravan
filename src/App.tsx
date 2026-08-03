@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  IS_NATIVE_APP,
+  playHapticPattern,
+  requestReminderPermission,
+  shareNativeApp,
+  syncNativeReminder,
+} from "./native";
 import wordsData from "./data/words.json";
 import phrasesData from "./data/phrases.json";
 import vowelData from "./data/vowels.json";
@@ -921,9 +928,10 @@ export default function App() {
   const [reminder, setReminder] = useState<ReminderSettings>(loadReminder);
   const [haptics, setHaptics] = useState(() => localStorage.getItem(HAPTICS_KEY) !== "false");
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
-  const [installed, setInstalled] = useState(isStandalone);
+  const [installed, setInstalled] = useState(() => IS_NATIVE_APP || isStandalone());
   const [showInstallHelp, setShowInstallHelp] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
+  const [reminderStatus, setReminderStatus] = useState("");
   const [levelUnlockNotice, setLevelUnlockNotice] = useState<number | null>(DEBUG_UNLOCK_NOTICE);
   const [levelCompletionNotice, setLevelCompletionNotice] = useState<number | null>(
     DEBUG_COMPLETION_NOTICE,
@@ -954,6 +962,23 @@ export default function App() {
   useEffect(() => localStorage.setItem(VOWEL_KEY, String(showVowels)), [showVowels]);
   useEffect(() => localStorage.setItem(REMINDER_KEY, JSON.stringify(reminder)), [reminder]);
   useEffect(() => localStorage.setItem(HAPTICS_KEY, String(haptics)), [haptics]);
+  useEffect(() => {
+    if (!IS_NATIVE_APP) return;
+    let current = true;
+    void syncNativeReminder(reminder)
+      .then((status) => {
+        if (!current) return;
+        if (status === "scheduled") setReminderStatus("Reminder scheduled on this device.");
+        if (status === "denied") setReminderStatus("Notifications are disabled in phone settings.");
+        if (status === "off") setReminderStatus("");
+      })
+      .catch(() => {
+        if (current) setReminderStatus("The reminder could not be scheduled.");
+      });
+    return () => {
+      current = false;
+    };
+  }, [reminder.enabled, reminder.interval, reminder.time]);
   useEffect(
     () => () => {
       if (masteryCelebrationTimer.current) {
@@ -1085,6 +1110,7 @@ export default function App() {
     progress.words,
   ]);
   useEffect(() => {
+    if (IS_NATIVE_APP) return;
     function captureInstallPrompt(event: Event) {
       event.preventDefault();
       setInstallPrompt(event as InstallPromptEvent);
@@ -1194,18 +1220,24 @@ export default function App() {
   const currentExerciseLetters = exerciseLetters(alphabetExerciseText);
   const currentBaseLetters = new Set(currentExerciseLetters.map(({ base }) => base));
   function wrongAnswerHaptic() {
-    if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate(30);
+    if (!haptics) return;
+    playHapticPattern([30]);
+  }
+
+  function toggleHaptics() {
+    const enabled = !haptics;
+    setHaptics(enabled);
+    if (enabled) playHapticPattern([30]);
   }
 
   function levelUnlockHaptic() {
-    if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate([90, 65, 135, 75, 190, 90, 285]);
+    if (!haptics) return;
+    playHapticPattern([90, 65, 135, 75, 190, 90, 285]);
   }
 
   function flowerGrowthHaptic(threshold: number) {
-    if (!haptics || !("vibrate" in navigator)) return;
-    navigator.vibrate(
+    if (!haptics) return;
+    playHapticPattern(
       threshold === 25
         ? [90, 60, 140, 70, 200, 80, 300, 95, 380]
         : [75, 55, 110, 65, 165, 80, 245],
@@ -1225,6 +1257,33 @@ export default function App() {
     trackEvent(choice.outcome === "accepted" ? "Install Accepted" : "Install Dismissed");
     if (choice.outcome === "accepted") setInstalled(true);
     setInstallPrompt(null);
+  }
+
+  async function enableReminder() {
+    if (!IS_NATIVE_APP) {
+      setReminder((current) => ({ ...current, enabled: true }));
+      return;
+    }
+    try {
+      const granted = await requestReminderPermission();
+      if (!granted) {
+        setReminderStatus("Notifications are disabled in phone settings.");
+        return;
+      }
+      setReminder((current) => ({ ...current, enabled: true }));
+      setReminderStatus("Reminder scheduled on this device.");
+      trackEvent("Reminder Created", { interval_days: reminder.interval, calendar: "native" });
+    } catch {
+      setReminderStatus("The reminder could not be scheduled.");
+    }
+  }
+
+  async function toggleReminder() {
+    if (reminder.enabled) {
+      setReminder((current) => ({ ...current, enabled: false }));
+      return;
+    }
+    await enableReminder();
   }
 
   function reminderTimes() {
@@ -1304,7 +1363,10 @@ export default function App() {
       url: APP_URL,
     };
     try {
-      if (navigator.share) {
+      if (await shareNativeApp(shareData)) {
+        setShareStatus("Shared");
+        trackEvent("App Shared", { method: "native_share" });
+      } else if (navigator.share) {
         await navigator.share(shareData);
         setShareStatus("Shared");
         trackEvent("App Shared", { method: "native_share" });
@@ -2129,11 +2191,11 @@ export default function App() {
             </div>
             {levelUnlockNotice === 2 &&
               !hideUnlockReturnOptions &&
-              (!installed || !reminder.enabled || showUnlockReminderSetup) && (
+              ((!IS_NATIVE_APP && !installed) || !reminder.enabled || showUnlockReminderSetup) && (
                 <div className="unlock-return-options">
                   <strong>Make Ravân easy to return to</strong>
                   <div className="unlock-return-actions">
-                    {!installed && (
+                    {!IS_NATIVE_APP && !installed && (
                       <button type="button" onClick={installApp}>Add to Home Screen</button>
                     )}
                     {!reminder.enabled && !showUnlockReminderSetup && (
@@ -2156,7 +2218,7 @@ export default function App() {
                       Not now
                     </button>
                   </div>
-                  {showInstallHelp && !installed && (
+                  {!IS_NATIVE_APP && showInstallHelp && !installed && (
                     <div className="install-help unlock-install-help">
                       <strong>Install from your browser</strong>
                       <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
@@ -2195,28 +2257,44 @@ export default function App() {
                         </label>
                       </div>
                       <div className="calendar-actions">
-                        <a
-                          className="secondary-action calendar-action"
-                          href={googleCalendarUrl()}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={() => {
-                            openGoogleCalendar();
-                            setShowUnlockReminderSetup(false);
-                          }}
-                        >
-                          Open Google Calendar
-                        </a>
-                        <button
-                          className="calendar-file-action"
-                          onClick={() => {
-                            downloadCalendarFile();
-                            setShowUnlockReminderSetup(false);
-                          }}
-                        >
-                          Use another calendar
-                        </button>
+                        {IS_NATIVE_APP ? (
+                          <button
+                            className="secondary-action calendar-action"
+                            onClick={() => {
+                              void enableReminder().then(() => setShowUnlockReminderSetup(false));
+                            }}
+                          >
+                            Save reminder
+                          </button>
+                        ) : (
+                          <>
+                            <a
+                              className="secondary-action calendar-action"
+                              href={googleCalendarUrl()}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={() => {
+                                openGoogleCalendar();
+                                setShowUnlockReminderSetup(false);
+                              }}
+                            >
+                              Open Google Calendar
+                            </a>
+                            <button
+                              className="calendar-file-action"
+                              onClick={() => {
+                                downloadCalendarFile();
+                                setShowUnlockReminderSetup(false);
+                              }}
+                            >
+                              Use another calendar
+                            </button>
+                          </>
+                        )}
                       </div>
+                      {IS_NATIVE_APP && reminderStatus && (
+                        <small className="native-reminder-status">{reminderStatus}</small>
+                      )}
                     </div>
                   )}
                 </div>
@@ -2971,36 +3049,40 @@ export default function App() {
                 <h2>Preferences</h2>
               </div>
               <div className="preference-list">
-                <div className="preference-item">
-                  <span>
-                    <strong>Add to Home Screen</strong>
-                    <small>
-                      {installed
-                        ? "Installed on this device. Remove it from your home screen or app settings to uninstall it."
-                        : "Open Ravân like an app directly from your home screen."}
-                    </small>
-                  </span>
-                  <button
-                    type="button"
-                    className={`vowel-toggle settings-toggle ${installed ? "installed" : ""}`}
-                    role="switch"
-                    aria-label="Add to Home Screen"
-                    aria-checked={installed}
-                    disabled={installed}
-                    onClick={installApp}
-                  >
-                    <span className="toggle-track"><span /></span>
-                    {installed ? "On" : "Off"}
-                  </button>
-                </div>
-                {showInstallHelp && !installed && (
-                  <div className="preference-details">
-                    <div className="install-help settings-install-help">
-                      <strong>Install from your browser</strong>
-                      <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
-                      <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
+                {!IS_NATIVE_APP && (
+                  <>
+                    <div className="preference-item">
+                      <span>
+                        <strong>Add to Home Screen</strong>
+                        <small>
+                          {installed
+                            ? "Installed on this device. Remove it from your home screen or app settings to uninstall it."
+                            : "Open Ravân like an app directly from your home screen."}
+                        </small>
+                      </span>
+                      <button
+                        type="button"
+                        className={`vowel-toggle settings-toggle ${installed ? "installed" : ""}`}
+                        role="switch"
+                        aria-label="Add to Home Screen"
+                        aria-checked={installed}
+                        disabled={installed}
+                        onClick={installApp}
+                      >
+                        <span className="toggle-track"><span /></span>
+                        {installed ? "On" : "Off"}
+                      </button>
                     </div>
-                  </div>
+                    {showInstallHelp && !installed && (
+                      <div className="preference-details">
+                        <div className="install-help settings-install-help">
+                          <strong>Install from your browser</strong>
+                          <span>On iPhone or iPad: tap Share, then “Add to Home Screen.”</span>
+                          <span>On Android: open the browser menu and choose “Install app” or “Add to Home screen.”</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div className="preference-item">
                   <span><strong>Haptics</strong><small>Use phone vibration effects</small></span>
@@ -3010,7 +3092,7 @@ export default function App() {
                     role="switch"
                     aria-label="Haptics"
                     aria-checked={haptics}
-                    onClick={() => setHaptics((enabled) => !enabled)}
+                    onClick={toggleHaptics}
                   >
                     <span className="toggle-track"><span /></span>
                     {haptics ? "On" : "Off"}
@@ -3019,7 +3101,11 @@ export default function App() {
                 <div className="preference-item">
                   <span>
                     <strong>Practice reminders</strong>
-                    <small>Create a recurring calendar event at a time that suits you.</small>
+                    <small>
+                      {IS_NATIVE_APP
+                        ? "Choose when Ravân should remind you to practise."
+                        : "Create a recurring calendar event at a time that suits you."}
+                    </small>
                   </span>
                   <button
                     type="button"
@@ -3027,9 +3113,7 @@ export default function App() {
                     role="switch"
                     aria-label="Practice reminders"
                     aria-checked={reminder.enabled}
-                    onClick={() =>
-                      setReminder((current) => ({ ...current, enabled: !current.enabled }))
-                    }
+                    onClick={() => void toggleReminder()}
                   >
                     <span className="toggle-track"><span /></span>
                     {reminder.enabled ? "On" : "Off"}
@@ -3066,20 +3150,26 @@ export default function App() {
                         </select>
                       </label>
                     </div>
-                    <div className="calendar-actions">
-                      <a
-                        className="secondary-action calendar-action"
-                        href={googleCalendarUrl()}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={openGoogleCalendar}
-                      >
-                        Open Google Calendar
-                      </a>
-                      <button className="calendar-file-action" onClick={downloadCalendarFile}>
-                        Use another calendar
-                      </button>
-                    </div>
+                    {IS_NATIVE_APP ? (
+                      reminderStatus && (
+                        <small className="native-reminder-status">{reminderStatus}</small>
+                      )
+                    ) : (
+                      <div className="calendar-actions">
+                        <a
+                          className="secondary-action calendar-action"
+                          href={googleCalendarUrl()}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={openGoogleCalendar}
+                        >
+                          Open Google Calendar
+                        </a>
+                        <button className="calendar-file-action" onClick={downloadCalendarFile}>
+                          Use another calendar
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -3134,6 +3224,14 @@ export default function App() {
                 onClick={() => trackEvent("Author Contact Click")}
               >
                 Contact the author
+              </a>
+              <a
+                className="about-contact-link"
+                href="https://baldertencate.github.io/ravan/privacy/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Privacy policy
               </a>
               <button
                 type="button"

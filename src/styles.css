@@ -442,6 +442,7 @@ a:focus-visible { outline: 3px solid #e69a6e; outline-offset: 4px; border-radius
   font: inherit; font-size: 11px;
 }
 .calendar-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 11px; }
+.native-reminder-status { display: block; color: var(--muted); font-size: 10px; line-height: 1.45; }
 .calendar-action {
   display: inline-flex;
   align-items: center;
@@ -738,11 +739,13 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 .graduation-copy strong { font-size: 12px; }
 .graduation-copy span { color: var(--muted); font-size: 9px; }
 .progress-summary {
-  min-width: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr);
-  align-items: center; gap: 9px;
+  min-width: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center; column-gap: 16px; row-gap: 9px;
 }
 .progress-summary-stats { min-width: 0; display: grid; gap: 7px; transform: translateY(10px); }
-.progress-summary-stats .progress-label { display: block; }
+.progress-summary-stats .progress-label { display: block; font-size: 10px; }
+.progress-summary-stats .progress-label strong { font-size: 12px; }
+.progress-summary-stats .progress-label small { font-size: 9px; }
 .progress-summary .current-level-number strong { font-size: 52px; }
 .mastery-goals { display: grid; gap: 12px; }
 .streak-progress,
@@ -1429,8 +1432,8 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
 .bottom-nav {
   position: fixed; z-index: 10; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: min(100%, 760px); height: calc(70px + env(safe-area-inset-bottom));
-  padding: 8px 10px env(safe-area-inset-bottom); display: grid; grid-template-columns: repeat(5, 1fr);
+  width: min(100%, 760px); height: calc(70px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  padding: 8px 10px var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); display: grid; grid-template-columns: repeat(5, 1fr);
   background: rgba(255, 255, 255, .94); backdrop-filter: blur(18px);
   border-top: 1px solid rgba(50, 65, 52, .12);
 }
@@ -1548,7 +1551,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
 @media (max-width: 600px), (max-height: 700px) and (pointer: coarse) {
   .app-shell {
-    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    padding-bottom: calc(70px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
   }
 
   .topbar {
@@ -1663,16 +1666,17 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .progress-summary {
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 8px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 8px;
   }
 
   .progress-summary .current-level-number > span { top: 9px; }
   .progress-summary .current-level-number strong { font-size: 64px; }
-  .progress-summary-stats { gap: 7px; margin-left: 4px; }
-  .progress-summary-stats .progress-label { font-size: 11px; font-weight: 400; }
-  .progress-summary-stats .progress-label strong { font-size: 12px; font-weight: 600; }
-  .progress-summary-stats .progress-label small { margin-inline-start: 3px; font-size: 11px; font-weight: 400; }
+  .progress-summary-stats { gap: 7px; margin-left: 0; }
+  .progress-summary-stats .progress-label { font-size: 12px; font-weight: 400; }
+  .progress-summary-stats .progress-label strong { font-size: 13px; font-weight: 600; }
+  .progress-summary-stats .progress-label small { margin-inline-start: 3px; font-size: 12px; font-weight: 400; }
 
   .mastery-goals { gap: 10px; }
 
@@ -1866,7 +1870,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
     bottom: 0;
     transform: translateX(-50%);
     width: min(100%, 760px);
-    height: calc(62px + env(safe-area-inset-bottom));
+    height: calc(62px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
     margin-top: 0;
   }
 }
@@ -1948,7 +1952,7 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
   }
 
   .bottom-nav {
-    height: calc(62px + env(safe-area-inset-bottom));
+    height: calc(62px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
     padding-top: 6px;
   }
 }
@@ -2050,7 +2054,44 @@ h2 { font-family: Georgia, serif; font-weight: 500; letter-spacing: -.025em; }
 
 @media (display-mode: standalone) and (max-width: 600px) {
   .topbar {
-    height: calc(56px + env(safe-area-inset-top));
-    padding-top: env(safe-area-inset-top);
+    height: calc(56px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+    padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  }
+}
+
+.native-app .topbar {
+  height: calc(76px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+}
+
+.native-app::before {
+  content: "";
+  position: fixed;
+  z-index: 100;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  pointer-events: none;
+  background: #000;
+}
+
+.native-app::after {
+  content: "";
+  position: fixed;
+  z-index: 99;
+  top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  right: 0;
+  left: 0;
+  height: 10px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 10px 10px, transparent 9.5px, #000 10px) left top / 10px 10px no-repeat,
+    radial-gradient(circle at 0 10px, transparent 9.5px, #000 10px) right top / 10px 10px no-repeat;
+}
+
+@media (max-width: 600px), (max-height: 700px) and (pointer: coarse) {
+  .native-app .topbar {
+    height: calc(56px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
   }
 }

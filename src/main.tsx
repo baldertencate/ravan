@@ -7,7 +7,10 @@ import "./styles.css";
 
 initAnalytics();
 
-const isApp = window.location.pathname.replace(/\/+$/, "").endsWith("/app");
+const isNativeApp = import.meta.env.MODE === "native";
+const isApp = isNativeApp || window.location.pathname.replace(/\/+$/, "").endsWith("/app");
+
+if (isNativeApp) document.documentElement.classList.add("native-app");
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -15,7 +18,7 @@ createRoot(document.getElementById("root")!).render(
   </StrictMode>,
 );
 
-if ("serviceWorker" in navigator) {
+if (!isNativeApp && "serviceWorker" in navigator) {
   const shouldReloadForUpdate = Boolean(navigator.serviceWorker.controller);
   let reloading = false;
   let reloadWhenVisible = false;

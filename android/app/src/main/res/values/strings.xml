@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ravân</string>
+    <string name="title_activity_main">Ravân</string>
+    <string name="package_name">com.baldertencate.ravan</string>
+    <string name="custom_url_scheme">com.baldertencate.ravan</string>
+</resources>
