@@ -12,6 +12,7 @@ declare global {
 
 const pendingEvents: Array<[string, EventProperties?]> = [];
 const analyticsDisabled =
+  import.meta.env.MODE === "native" ||
   new URLSearchParams(window.location.search).get("debug") === "1";
 
 function flushPendingEvents() {
